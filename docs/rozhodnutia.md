@@ -4,6 +4,44 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-007 · 2026-10-21 · Verejná stránka, Cloudflare Access iba na prihlásenie
+
+**Rozhodnutie (na žiadosť vlastníka):** aplikácia sa otvorí bez prihlasovacej obrazovky. V hornej lište vpravo je tlačidlo **Prihlásiť**. Toto mení sekciu 3.4 zadania.
+
+- Adresa je `https://synoptik-ezo.pages.dev`. Názov `synoptik.pages.dev` bol obsadený, Cloudflare pridal príponu.
+- Access aplikácia „Synoptik“ chráni iba `synoptik-ezo.pages.dev/prihlasenie` a celé preview deploymenty `*.synoptik-ezo.pages.dev`. Policy: iba e-mail vlastníka, One-time PIN, relácia 7 dní.
+- Tok: tlačidlo → `/prihlasenie/` → prihlásenie Access → statická stránka presmeruje na `/`. Pohľad sa obnoví z localStorage. Stav prihlásenia číta `/cdn-cgi/access/get-identity`, odhlásenie ide cez `/cdn-cgi/access/logout`.
+- **Dôsledok:** aplikáciu môže používať ktokoľvek, kto pozná adresu. `noindex` a `robots.txt` ostávajú. Dáta sú aj tak verejné (Open-Meteo). Prihlásenie zatiaľ nič neodomyká.
+- **Neskôr:** Pages Functions, ktoré míňajú bezplatné limity alebo čítajú súkromné dáta (`/data/*` z R2, `/api/obs`), treba pridať ako ďalšie cesty do tej istej Access aplikácie, prípadne v nich overovať JWT z hlavičky `Cf-Access-Jwt-Assertion`.
+
+## R-006 · 2026-10-21 · Fáza 2: Open-Meteo Forecast API pre bodové nástroje
+
+Overené požiadavkami na `api.open-meteo.com/v1/forecast` (bod Bratislava):
+
+- **CORS:** `Access-Control-Allow-Origin: *`. Volá sa priamo z prehliadača, cache v pamäti je 15 min.
+- **Parametre:** `wind_speed_unit=ms`, `timeformat=unixtime`, `timezone=GMT`. Teplota a rosný bod prichádzajú v °C, tlak v hPa, výška geopotenciálu v m. Pri načítaní sa prevedú na SI.
+- **Viac modelov naraz:** pri `models=a,b` majú premenné príponu `_a`, `_b`. Pri jednom modeli prípona nie je. Model mimo svojej oblasti (napr. AROME France pre Bratislavu) **sa v odpovedi ticho vynechá**. Keď je zadaný sám, API vráti chybu „No data is available for this location“.
+- **Modely** (názvy pre `models=`): `icon_eu`, `icon_d2`, `icon_global`, `ecmwf_ifs025`, `gfs025`, `meteofrance_arpege_europe`, `ukmo_global_deterministic_10km`. Ďalšie fungujú tiež (`knmi_harmonie_arome_europe`, `ecmwf_aifs025_single`, `metno_seamless`), zatiaľ ich nepoužívame.
+  - `gfs025` **nemá** `cloud_cover_low/mid/high` ani `precipitation` (samé null).
+  - `ecmwf_ifs` (9 km) nemá tlakové hladiny. Pre Skew-T sa preto používa `ecmwf_ifs025`.
+  - `dmi_harmonie_arome_europe` nemá 500 hPa.
+- **Tlakové hladiny (teplota):**
+
+  | Model | Hladiny hPa |
+  |---|---|
+  | icon_eu | 1000 975 950 925 900 850 800 700 600 500 400 300 250 200 150 100 70 50 |
+  | icon_d2 | 1000 … 200 (bez 150 a vyšších) |
+  | ecmwf_ifs025 | 1000 925 850 700 600 500 400 300 250 200 150 100 50 |
+  | gfs, ukmo | 1000 … 30 |
+  | arpege_europe | 1000 950 925 900 850 800 700 600 500 400 300 250 200 150 100 |
+
+  Na každej hladine sú `temperature`, `dew_point`, `relative_humidity`, `wind_speed`, `wind_direction`, `geopotential_height`. Chýbajúce hladiny sú `null` a Skew-T ich preskočí.
+- **Beh modelu (init time)** API v odpovedi nevracia. Dá sa zistiť z `api.open-meteo.com/data/<model>/static/meta.json` (`last_run_initialisation_time`, UNIX s; CORS `*`). Priečinky: `dwd_icon_eu`, `dwd_icon_d2`, `dwd_icon`, `ecmwf_ifs025`, `ncep_gfs025`, `meteofrance_arpege_europe`, `ukmo_global_deterministic_10km`. **Obmedzenie:** udáva *posledný* beh. Forecast API môže krátko po novom behu ešte vracať predchádzajúci beh. Pri bodových nástrojoch sa preto zobrazuje „posledný beh podľa meta.json“.
+- **Iné premenné:** `lifted_index` je iba v GFS. `convective_inhibition` a `freezing_level_height` ECMWF nemá. `total_column_integrated_water_vapour` ICON-EU nemá. Indexy v Skew-T sa preto **počítajú sami** zo sondáže (`lib/thermo.ts`).
+- **Limity** (podľa open-meteo.com/en/terms, nekomerčné použitie): 10 000 volaní za deň, 5 000 za hodinu, 600 za minútu. Požiadavka s viac ako 10 premennými sa počíta ako viac volaní (podiel z počtu premenných / 10). Skew-T má ~85 premenných, teda ~8,5 volania za jeden klik. Pre jedného používateľa s 15-minútovou cache je to dostatočné.
+
+---
+
 ## R-005 · 2026-10-21 · Fáza 1: overenie hodnôt a výkonu
 
 **Hodnota pod kurzorom vs. Open-Meteo API** (beh 2026-10-21 09Z, platnosť 15 UTC, náhodné stredy buniek, API s `cell_selection=nearest&elevation=nan`):

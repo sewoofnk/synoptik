@@ -1,9 +1,10 @@
 import { MODELS } from "../config/models";
 import { ageHours, formatLead, formatRun, formatValidUtc } from "../lib/time";
 import { model, modelId, runChoice, runError, runInfo, runs, validTime } from "../state/store";
+import { LoginButton } from "./LoginButton";
 import { UnitsMenu } from "./UnitsMenu";
 
-// Horná lišta: model, beh, platnosť a jednotky. Model + beh + platnosť musia byť vždy viditeľné.
+// Horná lišta: model, beh, platnosť, jednotky a prihlásenie. Model + beh + platnosť musia byť vždy viditeľné.
 export function TopBar() {
   const run = runInfo.value;
   const vt = validTime.value;
@@ -67,6 +68,7 @@ export function TopBar() {
 
       <span class="spacer" />
       <UnitsMenu />
+      <LoginButton />
     </header>
   );
 }

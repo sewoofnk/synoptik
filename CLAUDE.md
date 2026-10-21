@@ -2,7 +2,7 @@
 
 Profesionálna meteorologická webová aplikácia pre Európu, inšpirovaná funkciami Windy.com (vrátane Premium). Používa ju iba jeden používateľ (vlastník). Tento súbor je hlavné zadanie a pravidlá práce pre Claude Code.
 
-- **Adresa:** `https://synoptik.pages.dev`
+- **Adresa:** `https://synoptik-ezo.pages.dev` (názov `synoptik` bol obsadený)
 - **Hosting:** Cloudflare Pages + Pages Functions + R2 + Workers
 - **Repozitár:** GitHub, **súkromný**
 - **Rozpočet:** 0 €. Všetko musí bežať v bezplatných limitoch. Žiadne platené API ani služby.
@@ -54,7 +54,7 @@ Nepoužívať ťažké frameworky ani knižnice s platenou licenciou (napr. weat
 │  /pipeline   Python spracovanie GRIB  → GitHub Actions cron → R2           │
 └────────────────────────────────────────────────────────────────────────────┘
 
-Prehliadač ──► synoptik.pages.dev (za Cloudflare Access)
+Prehliadač ──► synoptik-ezo.pages.dev (verejná; Access iba na /prihlasenie, pozri R-007)
                  ├─ statický frontend
                  ├─ /data/*   → Pages Function → R2 bucket (mapové polia)
                  ├─ /api/obs  → Pages Function → aviationweather.gov, OGIMET (proxy + cache)
@@ -110,7 +110,7 @@ Každé pole a časový krok = jeden súbor, ľahko načítateľný ako WebGL te
 - Limit R2 free: 10 GB úložiska. Sledovať veľkosť.
 
 ### 3.4 Bezpečnosť a súkromie
-- **Cloudflare Access** na `synoptik.pages.dev` aj na preview deploymenty (`*.synoptik.pages.dev`). Povolený iba e-mail vlastníka.
+- **Cloudflare Access:** hlavná stránka je verejná (rozhodnutie vlastníka, `docs/rozhodnutia.md` R-007). Access chráni cestu `/prihlasenie` (tlačidlo Prihlásiť v hornej lište vpravo) a celé preview deploymenty (`*.synoptik-ezo.pages.dev`). Povolený iba e-mail vlastníka. Nové Pages Functions, ktoré míňajú limity alebo čítajú súkromné dáta, pridať do Access.
 - R2 bucket **nie je verejný**. Dáta sa čítajú cez Pages Function s R2 bindingom, takže sú tiež za Access.
 - Kľúče (R2 access key pre pipeline) iba v GitHub Secrets. Nikdy v kóde ani v commitoch.
 - `<meta name="robots" content="noindex, nofollow">` a `robots.txt` so zákazom.
@@ -197,7 +197,7 @@ Pravidlá:
 
 ## 9. Fázy práce
 
-Každá fáza končí funkčným nasadením na `synoptik.pages.dev`. Po každej fáze aktualizovať `README.md` (stav, ako spustiť lokálne, ako nasadiť).
+Každá fáza končí funkčným nasadením na `synoptik-ezo.pages.dev`. Po každej fáze aktualizovať `README.md` (stav, ako spustiť lokálne, ako nasadiť).
 
 ### Fáza 0 – Základ a overenie (spike)
 - Vite + TS + Preact projekt, MapLibre s OpenFreeMap, nasadenie na Pages, Cloudflare Access.

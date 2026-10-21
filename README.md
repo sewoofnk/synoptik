@@ -4,7 +4,7 @@ Súkromná meteorologická webová aplikácia pre Európu. Zadanie a pravidlá: 
 
 ## Stav
 
-**Fáza 1 – prvé modelové polia (ICON-EU).** Kód je hotový a lokálne overený. Nasadenie a Cloudflare Access ešte nie sú urobené (pozri nižšie).
+**Fáza 1 – prvé modelové polia (ICON-EU).** Kód je hotový a lokálne overený. Nasadené na https://synoptik-ezo.pages.dev.
 
 Hotové:
 - Fáza 0: Vite + TS strict + Preact, MapLibre GL JS 6 + OpenFreeMap, noindex, atribúcia, rozhodnutie o dátach ([R-001](docs/rozhodnutia.md))
@@ -16,7 +16,7 @@ Hotové:
 - Overené: hodnoty pod kurzorom sedia s Open-Meteo API v 3 náhodných bodoch ([R-005](docs/rozhodnutia.md))
 
 Otvorené:
-- [ ] Nasadenie na `synoptik.pages.dev` + Cloudflare Access (čaká na GitHub repozitár)
+- [x] Nasadenie na `synoptik-ezo.pages.dev` + Cloudflare Access (prihlásenie v hornej lište)
 - [ ] Overiť 60 fps častíc v prehliadači s GPU
 - [ ] Mobil: panely ako vysúvacie listy zdola (zatiaľ iba zbaliteľný ľavý panel)
 
@@ -38,21 +38,24 @@ Jednorazové nastavenie v Cloudflare dashboarde:
 
 1. **Workers & Pages → Create → Pages → Connect to Git** → vybrať súkromný repozitár.
 2. Nastavenie buildu:
-   - Project name: `synoptik` (→ `synoptik.pages.dev`)
+   - Project name: `synoptik` (→ `synoptik-ezo.pages.dev`, názov bez prípony bol obsadený)
    - Production branch: `main`
    - Framework preset: *None*
    - Build command: `cd web && npm ci && npm run build`
    - Build output directory: `web/dist`
    - Premenná prostredia: `NODE_VERSION` = `24`
-3. Ďalej sa nasadzuje automaticky pri každom pushi do `main`. Ostatné vetvy idú na preview `*.synoptik.pages.dev`.
+3. Ďalej sa nasadzuje automaticky pri každom pushi do `main`. Ostatné vetvy idú na preview `*.synoptik-ezo.pages.dev`.
 
-### Cloudflare Access (iba vlastník)
+### Cloudflare Access (prihlásenie vlastníka)
 
-1. **Zero Trust** (bezplatný plán do 50 používateľov) → **Access → Applications → Add → Self-hosted**.
-2. Domény aplikácie: `synoptik.pages.dev` **a** `*.synoptik.pages.dev` (preview).
-3. Policy: *Allow*, Include → *Emails* → e-mail vlastníka.
-4. Login metóda: *One-time PIN* (bez ďalšej konfigurácie).
-5. Overenie: otvoriť `https://synoptik.pages.dev` v anonymnom okne. Musí sa zobraziť prihlasovacia stránka Access.
+Hlavná stránka je verejná. Access chráni iba cestu `/prihlasenie` a preview deploymenty ([R-007](docs/rozhodnutia.md)).
+
+1. **Zero Trust** (bezplatný plán) → **Access controls → Applications → Add → Self-hosted**, názov „Synoptik“.
+2. Ciele: `synoptik-ezo.pages.dev/prihlasenie` a `*.synoptik-ezo.pages.dev`.
+3. Policy: *Allow*, Include → *Emails* → e-mail vlastníka. Login metóda: *One-time PIN*.
+4. Overenie: hlavná stránka sa otvorí bez prihlásenia. Tlačidlo **Prihlásiť** vpravo hore vedie na prihlásenie Access a potom späť. Po prihlásení je vpravo hore e-mail a **Odhlásiť**.
+
+Nastavenie cez API (token s oprávnením *Access: Apps and Policies – Edit* v premennej `CLOUDFLARE_API_TOKEN`) je zapísané v R-007.
 
 ## Štruktúra
 
