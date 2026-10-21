@@ -11,6 +11,7 @@ import {
   menuOpen,
   modelId,
   overlays,
+  particleDensity,
   playSpeed,
   runChoice,
   runInfo,
@@ -118,6 +119,23 @@ export function MainMenu() {
                 />
               </label>
             ))}
+          </section>
+
+          <section>
+            <h3>Animácia vetra – hustota</h3>
+            <div class="segmented">
+              {(
+                [
+                  ["low", "Nízka"],
+                  ["medium", "Stredná"],
+                  ["high", "Vysoká"],
+                ] as const
+              ).map(([id, label]) => (
+                <button key={id} class={particleDensity.value === id ? "active" : ""} onClick={() => (particleDensity.value = id)}>
+                  {label}
+                </button>
+              ))}
+            </div>
           </section>
 
           <section>

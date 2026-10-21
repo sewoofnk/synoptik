@@ -121,8 +121,11 @@ export class WindParticlesLayer implements CustomLayerInterface {
 
   /** Px (CSS) za snímok pri 1 m/s */
   speedFactor = 0.12;
-  fade = 0.955;
-  opacity = 0.85;
+  /** Kratšie stopy a stlmený jas – pri plnej hustote bolo bielych čiar priveľa (pripomienka vlastníka) */
+  fade = 0.94;
+  opacity = 0.7;
+  /** Plocha obrazovky (CSS px²) na jednu časticu; väčšie číslo = menej čiar */
+  pxPerParticle = 75;
   dropRate = 0.004;
   dropRateBump = 0.01;
 
@@ -198,10 +201,16 @@ export class WindParticlesLayer implements CustomLayerInterface {
     this.map = null;
   }
 
-  /** Počet častíc podľa plochy obrazovky (CSS px): ~1 častica na 30 px², max 65 536 */
+  /** Hustota podľa nastavenia (zmena sa prejaví pri ďalšom snímku) */
+  setDensity(pxPerParticle: number) {
+    this.pxPerParticle = pxPerParticle;
+    this.map?.triggerRepaint();
+  }
+
+  /** Počet častíc podľa plochy obrazovky (CSS px): 1 častica na `pxPerParticle` px², max 65 536 */
   private ensureParticles(gl: WebGL2RenderingContext) {
     const c = this.map!.getCanvas();
-    const n = Math.min(65536, Math.max(4096, (c.clientWidth * c.clientHeight) / 30));
+    const n = Math.min(65536, Math.max(1024, (c.clientWidth * c.clientHeight) / this.pxPerParticle));
     const res = Math.ceil(Math.sqrt(n));
     if (res === this.res) return;
     this.stateTex?.forEach((t) => gl.deleteTexture(t));

@@ -14,6 +14,7 @@ import { decodeHash, encodeHash, type ViewState } from "./viewState";
 const LS_VIEW = "synoptik.view";
 const LS_UNITS = "synoptik.units";
 const LS_BORDERS = "synoptik.borders";
+const LS_PARTICLES = "synoptik.particles";
 
 const DEFAULT_VIEW: ViewState = {
   model: DEFAULT_MODEL_ID,
@@ -72,6 +73,12 @@ export const units = signal<UnitSettings>(isUnitSettings(storedUnits) ? storedUn
 const storedBorders = readLocal<unknown>(LS_BORDERS);
 /** Farba a hrúbka hraníc štátov (nastavenie v menu) */
 export const borders = signal<BorderSettings>(isBorderSettings(storedBorders) ? storedBorders : { ...DEFAULT_BORDERS });
+export type ParticleDensity = "low" | "medium" | "high";
+const storedDensity = readLocal<string>(LS_PARTICLES);
+/** Hustota animácie vetra (nastavenie v menu) */
+export const particleDensity = signal<ParticleDensity>(
+  storedDensity === "low" || storedDensity === "high" ? storedDensity : "medium",
+);
 
 export const playing = signal(false);
 /** Krokov za sekundu */
@@ -208,6 +215,7 @@ effect(() => {
 
 effect(() => writeLocal(LS_UNITS, units.value));
 effect(() => writeLocal(LS_BORDERS, borders.value));
+effect(() => writeLocal(LS_PARTICLES, particleDensity.value));
 
 // Späť/vpred v prehliadači alebo ručne zmenený hash
 window.addEventListener("hashchange", () => {

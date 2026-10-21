@@ -17,6 +17,7 @@ import {
   layer,
   level,
   overlays,
+  particleDensity,
   playing,
   playSpeed,
   point,
@@ -108,6 +109,8 @@ export class MapController {
     this.disposers.push(
       effect(() => void this.syncField()),
       effect(() => void this.syncParticles()),
+      // plocha na časticu: nízka / stredná / vysoká hustota
+      effect(() => this.particles.setDensity({ low: 140, medium: 75, high: 35 }[particleDensity.value])),
       effect(() => void this.syncIsolines()),
       effect(() => void this.syncIsotherms()),
       // zmena jednotiek → iba popisky izočiar
