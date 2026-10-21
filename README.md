@@ -4,15 +4,21 @@ Súkromná meteorologická webová aplikácia pre Európu. Zadanie a pravidlá: 
 
 ## Stav
 
-**Fáza 0 – základ a overenie.** Kód je hotový, nasadenie čaká na nastavenie Cloudflare.
+**Fáza 1 – prvé modelové polia (ICON-EU).** Kód je hotový a lokálne overený. Nasadenie a Cloudflare Access ešte nie sú urobené (pozri nižšie).
 
-- [x] Vite + TypeScript (strict) + Preact, MapLibre GL JS 6 s OpenFreeMap (svetlá/tmavá téma podľa systému)
-- [x] Horná lišta zobrazuje posledný beh ICON-EU načítaný priamo z Open-Meteo S3
-- [x] Pätička: upozornenie (nie je letecký zdroj) a atribúcia
-- [x] `noindex` (meta + `X-Robots-Tag`) a `robots.txt`
-- [x] Rozhodnutie o dátovej ceste: **A – Open-Meteo S3 v prehliadači** ([R-001](docs/rozhodnutia.md))
-- [ ] Nasadenie na `synoptik.pages.dev`
-- [ ] Cloudflare Access
+Hotové:
+- Fáza 0: Vite + TS strict + Preact, MapLibre GL JS 6 + OpenFreeMap, noindex, atribúcia, rozhodnutie o dátach ([R-001](docs/rozhodnutia.md))
+- Mapové polia ICON-EU priamo z Open-Meteo S3: teplota 2 m, MSLP, vietor 10 m, nárazy, RH 2 m, zrážky, oblačnosť (celková/nízka/stredná/vysoká)
+- WebGL farebné pole, izobary (Web Worker, d3-contour), častice vetra (GPU)
+- Výber behu (posledné 3 dni), časová os s prehrávaním a prednačítaním, legenda, hodnota pod kurzorom
+- Jednotky: metrické / letecké / vlastné, okamžite všade
+- Stav v URL hash + localStorage, klávesy ←/→, medzerník, M
+- Overené: hodnoty pod kurzorom sedia s Open-Meteo API v 3 náhodných bodoch ([R-005](docs/rozhodnutia.md))
+
+Otvorené:
+- [ ] Nasadenie na `synoptik.pages.dev` + Cloudflare Access (čaká na GitHub repozitár)
+- [ ] Overiť 60 fps častíc v prehliadači s GPU
+- [ ] Mobil: panely ako vysúvacie listy zdola (zatiaľ iba zbaliteľný ľavý panel)
 
 ## Lokálne spustenie
 
@@ -52,11 +58,13 @@ Jednorazové nastavenie v Cloudflare dashboarde:
 
 ```
 web/          frontend (Vite)
-  src/map       MapLibre, neskôr WebGL vrstvy
-  src/panels    horná lišta, pätička, neskôr panely a časová os
-  src/data      prístup k Open-Meteo S3
-  src/config    modely (neskôr vrstvy, farebné škály)
-  src/lib       čas (neskôr jednotky, termodynamika)
+  src/map       MapLibre, WebGL vrstvy (pole, častice), riadenie mapy
+  src/panels    horná lišta, ľavý panel, legenda, časová os, jednotky
+  src/data      Open-Meteo S3: behy, načítanie polí, mriežka
+  src/config    modely, katalóg vrstiev, farebné škály
+  src/lib       jednotky, čas
+  src/state     stav aplikácie (signals), URL hash
+  src/workers   izočiary (Web Worker)
 docs/         rozhodnutia
 .github/      CI (typecheck, testy, build – iba pri zmene web/)
 ```

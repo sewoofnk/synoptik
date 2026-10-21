@@ -4,6 +4,38 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-005 · 2026-10-21 · Fáza 1: overenie hodnôt a výkonu
+
+**Hodnota pod kurzorom vs. Open-Meteo API** (beh 2026-10-21 09Z, platnosť 15 UTC, náhodné stredy buniek, API s `cell_selection=nearest&elevation=nan`):
+
+| Bod | Teplota 2 m (app / API) | MSLP hPa (app / API) | Vietor 10 m m/s (app / API) |
+|---|---|---|---|
+| 55,7500 N 14,3125 E | 11,0 / 11,1 | 1011,9 / 1011,9 | 3,6 / 3,61 |
+| 47,6250 N 23,2500 E | 18,1 / 18,1 | 1016,9 / 1016,9 | 3,4 / 3,38 |
+| 42,0000 N 23,8125 E | 13,8 / 13,9 | 1020,6 / 1020,6 | 2,2 / 2,24 |
+
+Rozdiely ≤ 0,1 vznikajú zaokrúhlením a tým, že popisok interpoluje bilineárne a kurzor nie je presne v strede bunky.
+**Pozor:** API bez `elevation=nan` prepočítava teplotu 2 m na nadmorskú výšku bodu (±0,2 °C), preto sa porovnáva s týmto parametrom.
+
+**Výkon** (Playwright + Chrome so softvérovým WebGL, domáca sieť SK → S3 us-west-2):
+- Prepnutie na prednačítaný krok: **17–35 ms** (limit 300 ms ✓).
+- Prvé prehranie (dáta ešte nie sú v cache): **~1,5 kroku/s** pre jedno pole. Brzdí to latencia S3 (medián requestu 377 ms, ~8 requestov na súbor kroku). Pri poli + izobarách je to približne polovica. Opakované prehranie ide z cache.
+- 60 fps pri časticiach sa tu nedá overiť: softvérové WebGL dalo 23 fps. **Overiť v bežnom prehliadači s GPU.**
+
+## R-004 · 2026-10-21 · Fáza 1: vykresľovanie a dátové detaily
+
+- **Farebné pole a častice sa kreslia v súradniciach obrazovky.** Shader prevádza pixel → Web Mercator → lat/lon → bunka mriežky; výrez mapy berie z `map.unproject`. Je to jednoduché a presné, ale predpokladá mapu bez rotácie a náklonu. Tie sú preto vypnuté (pri synoptických mapách je to bežné). **Pri glóbuse (Fáza 6+) treba prejsť na projekčnú maticu MapLibre.**
+- Pole ide do GPU ako R16F textúra, už normalizovaná do pozície v škále (0–1), s lineárnym filtrovaním. Farba sa berie z LUT s 256 farbami. Škály sú v `config/colorscales.ts`, zarážky sú v SI.
+- Vietor ide do GPU ako RG16F (u, v v m/s). Častice: RGBA8 textúra pozícií (16 bitov na súradnicu), technika mapbox/webgl-wind.
+- Izobary počíta Web Worker cez `d3-contour` z poľa zriedeného 2× (0,125°), každé 4 hPa, 1000 a 1020 hPa sú zvýraznené. Body na okraji mriežky sa vyhadzujú, aby sa kontúry neuzatvárali po okraji.
+- **Zrážky** v `data_spatial` sú súčet za interval od predchádzajúceho kroku: 1 h do +78 h, potom 3 h. Overené: 3-hodinová hodnota = súčet troch hodín z API (napr. 10,6 vs 10,5 mm). Legenda ukazuje dĺžku intervalu.
+- **Krok +0 h** neobsahuje premenné za interval (`precipitation`, `rain`, `showers`, `snowfall_water_equivalent`, `wind_gusts_10m`): 116 premenných namiesto 126. Aplikácia zobrazí poznámku a pole nekreslí.
+- Pri akejkoľvek chybe načítania sa pole, izobary aj častice vyčistia. Nikdy sa nezobrazí staré pole pod novým časom.
+- Cache: bloky súborov idú do perzistentného Cache API (400 MB, súbory behu sú nemenné). Ak Cache API zlyhá (súkromné okno), použije sa pamäťová LRU. Hotové polia sú v pamäti, LRU 48 polí (~170 MB).
+- Zoznam behov sa číta z výpisu S3 (ListObjectsV2 s `delimiter=/`, CORS povolený) za posledné 3 dni. Metadáta behu sú v `<beh>/meta.json`.
+
+---
+
 ## R-003 · 2026-10-21 · MapLibre GL JS 6.x namiesto 5.x
 
 **Rozhodnutie:** používame `maplibre-gl@6.15.0` (zadanie uvádzalo verziu 5).
