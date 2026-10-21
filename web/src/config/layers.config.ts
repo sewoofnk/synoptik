@@ -22,6 +22,9 @@ export const LEVELS: readonly Level[] = ["sfc", 850, 700, 500, 300, 250];
 /** Približná letová hladina v štandardnej atmosfére (orientačne pre pilotov) */
 export const LEVEL_FL: Record<Exclude<Level, "sfc">, string> = { 850: "FL050", 700: "FL100", 500: "FL180", 300: "FL300", 250: "FL340" };
 
+/** Poradie vo výbere výšky: zhora (250 hPa) k povrchu, ako výškomer */
+export const LAYER_LEVEL_ORDER: readonly Level[] = [...LEVELS].reverse();
+
 export function levelLabel(l: Level): string {
   return l === "sfc" ? "Povrch" : `${l} hPa`;
 }

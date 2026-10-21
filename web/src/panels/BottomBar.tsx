@@ -1,8 +1,8 @@
 import { useState } from "preact/hooks";
-import { LEVEL_FL, LEVELS, levelLabel, OVERLAYS, overlayVariables } from "../config/layers.config";
+import { OVERLAYS, overlayVariables } from "../config/layers.config";
 import { MODELS } from "../config/models";
 import { flyTo, zoomBy } from "../map/mapInstance";
-import { layer, level, modelId, overlays, point, runInfo, selectLevel, selectModel, toggleOverlay } from "../state/store";
+import { layer, level, modelId, overlays, point, runInfo, selectModel, toggleOverlay } from "../state/store";
 import { Footer } from "./Footer";
 import { Icon } from "./icons";
 import { Legend } from "./Legend";
@@ -66,27 +66,6 @@ function MapButtons() {
   );
 }
 
-/** Výber hladiny (ako „Výška“ vo Windy); klávesy [ ] */
-function LevelPills() {
-  return (
-    <div class="model-pills level-pills glass" role="radiogroup" aria-label="Hladina">
-      {LEVELS.map((l) => (
-        <button
-          key={l}
-          role="radio"
-          aria-checked={level.value === l}
-          class={level.value === l ? "active" : ""}
-          onClick={() => selectLevel(l)}
-          title={l === "sfc" ? "Povrch: 2 m / 10 m / MSL ( [ ] mení hladinu)" : `${l} hPa ≈ ${LEVEL_FL[l]} ( [ ] mení hladinu)`}
-        >
-          {l === "sfc" ? levelLabel(l) : l}
-          {l !== "sfc" && <small>{LEVEL_FL[l]}</small>}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function ModelPills() {
   return (
     <div class="model-pills glass" role="radiogroup" aria-label="Model">
@@ -115,7 +94,6 @@ export function BottomBar() {
           <OverlayToggles />
           <MapButtons />
         </div>
-        <LevelPills />
         <ModelPills />
         <Legend />
       </div>

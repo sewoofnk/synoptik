@@ -89,6 +89,37 @@ select {
   color: var(--text);
 }
 
+/* --- Ovládacie prvky nad mapou: vždy tmavé s oranžovým zvýraznením (vzhľad Windy) ---
+   Prepíšu sa iba farebné premenné, komponenty ostávajú rovnaké. Menu a bodový panel
+   sa riadia témou systému. */
+.info-chip,
+.right-stack,
+.bottom {
+  --glass: rgba(36, 38, 42, 0.86);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --text: #f4f5f7;
+  --muted: rgba(255, 255, 255, 0.62);
+  --border: rgba(255, 255, 255, 0.22);
+  --accent: #e8a01e;
+  --accent-soft: rgba(255, 255, 255, 0.12);
+  --error: #ff6b5e;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  /* farba textu sa dedí z body – treba ju nastaviť priamo, nie iba premennú */
+  color: var(--text);
+}
+.right-stack .round.accent { background: #b3261e; }
+.round.accent-alt { background: #e8a01e; }
+.pill-sub { font-weight: 600; color: var(--accent); }
+.quick.level .round.level-dot {
+  width: 40px;
+  height: 40px;
+  background: rgba(36, 38, 42, 0.92);
+  color: #fff;
+  font: 700 10px var(--mono);
+}
+.quick.level.active .round.level-dot { background: var(--accent); }
+.note-pill { font-weight: 500; font-size: 11px; color: var(--muted); }
+
 /* --- Kostra --- */
 .app { position: fixed; inset: 0; overflow: hidden; }
 .map { position: absolute; inset: 0; }

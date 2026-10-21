@@ -110,6 +110,7 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 - **Bodový panel:** desktop vľavo pod štítkom, mobil list zdola (78 % výšky, potiahnutie úchytu nadol ho zavrie).
 - Mobil: dotykové plochy ≥ 40 px, `env(safe-area-inset-*)` (notch, home indicator), `dvh`, bez horizontálneho pretečenia. Overené v Playwright na iPhone 13 a iPhone SE (svetlá aj tmavá téma) a na desktope 1400×860.
 - Popisok pod kurzorom sa ukazuje iba na zariadeniach s myšou (`hover: hover`).
+- **Doplnenie (Fáza 4, pripomienka vlastníka „aby UI vyzeralo ako Windy aj rozloženie“):** ovládacie prvky nad mapou (štítok, pravý stĺpec, spodná časť) sú **vždy tmavé, polopriehľadné, s bielym textom a oranžovým zvýraznením** ako vo Windy. Menu je červený kruh. Prepisujú sa iba farebné premenné na kontajneroch, menu a bodový panel ostávajú podľa témy systému. Výber hladiny je ako **„Výška“** v pravom stĺpci, otvorí zoznam hladín zhora nadol s FL. Riadok hladín v spodnej lište bol odstránený.
 
 ## R-007 · 2026-10-21 · Verejná stránka, Cloudflare Access iba na prihlásenie
 

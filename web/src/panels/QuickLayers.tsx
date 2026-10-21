@@ -1,11 +1,34 @@
 import { COLOR_SCALES, cssGradient } from "../config/colorscales";
-import { isLayerAvailable, LAYERS, previewScale } from "../config/layers.config";
-import { layerId, level, menuOpen, runInfo, selectLayer } from "../state/store";
+import { useState } from "preact/hooks";
+import { isLayerAvailable, LAYER_LEVEL_ORDER, LAYERS, LEVEL_FL, levelLabel, previewScale } from "../config/layers.config";
+import { layer, layerId, level, menuOpen, runInfo, selectLayer, selectLevel } from "../state/store";
 import { Icon } from "./icons";
 import { LoginButton } from "./LoginButton";
 
-// Pravý horný stĺpec (ako Windy): prihlásenie, Menu, rýchly výber vrstiev s farebnou ikonou.
+/** Výber výšky (ako „Výška“ vo Windy): zoznam hladín zhora nadol namiesto vrstiev; klávesy [ ] */
+function LevelList({ onBack }: { onBack: () => void }) {
+  return (
+    <nav class="quick-list" aria-label="Výška">
+      <button class="quick more" onClick={onBack}>
+        <span class="pill-label">◂ Vrstvy</span>
+      </button>
+      {LAYER_LEVEL_ORDER.map((l) => {
+        const active = level.value === l;
+        return (
+          <button key={l} class={`quick level ${active ? "active" : ""}`} onClick={() => selectLevel(l)} aria-pressed={active}>
+            <span class="pill-label">{levelLabel(l)}</span>
+            <span class="round level-dot">{l === "sfc" ? "SFC" : LEVEL_FL[l].replace("FL", "")}</span>
+          </button>
+        );
+      })}
+      {layer.value.level === "sfc" && level.value !== "sfc" && <span class="pill-label note-pill">{layer.value.def.label}: iba pri povrchu</span>}
+    </nav>
+  );
+}
+
+// Pravý horný stĺpec (ako Windy): prihlásenie, Menu, rýchly výber vrstiev s farebnou ikonou, Výška.
 export function QuickLayers() {
+  const [levels, setLevels] = useState(false);
   const vars = runInfo.value?.variables;
   const quick = LAYERS.filter((l) => l.quick);
 
@@ -18,6 +41,9 @@ export function QuickLayers() {
           <Icon name="menu" size={22} />
         </span>
       </button>
+      {levels ? (
+        <LevelList onBack={() => setLevels(false)} />
+      ) : (
       <nav class="quick-list" aria-label="Rýchly výber vrstvy">
         {quick.map((l) => {
           const ok = isLayerAvailable(l, level.value, vars);
@@ -41,7 +67,16 @@ export function QuickLayers() {
         <button class="quick more" onClick={() => (menuOpen.value = true)}>
           <span class="pill-label">Viac vrstiev…</span>
         </button>
+        <button class="quick" onClick={() => setLevels(true)} title="Výška – tlakové hladiny ( [ ] )">
+          <span class="pill-label">
+            Výška{level.value !== "sfc" && <b class="pill-sub"> {level.value} hPa</b>}
+          </span>
+          <span class="round accent-alt">
+            <Icon name="plane" size={20} />
+          </span>
+        </button>
       </nav>
+      )}
     </div>
   );
 }
