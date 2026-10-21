@@ -1,10 +1,10 @@
 import { effect } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
-import { Map as MlMap, NavigationControl, ScaleControl, setWorkerUrl } from "maplibre-gl";
+import { Map as MlMap, Marker, NavigationControl, ScaleControl, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 // MapLibre v6 načítava worker ako samostatný ES modul – Vite ho musí vydať ako asset
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
-import { mapView } from "../state/store";
+import { mapView, point } from "../state/store";
 import { MapController } from "./mapController";
 
 setWorkerUrl(workerUrl);
@@ -61,6 +61,14 @@ export function MapView() {
       }
     });
 
+    // Značka vybraného bodu (bodové nástroje)
+    const marker = new Marker({ color: "#e5484d", scale: 0.8 });
+    const stopMarker = effect(() => {
+      const p = point.value;
+      if (p) marker.setLngLat([p.lon, p.lat]).addTo(map);
+      else marker.remove();
+    });
+
     // Prepnutie témy podkladu podľa systému
     const onTheme = (e: MediaQueryListEvent) => map.setStyle(e.matches ? STYLE_DARK : STYLE_LIGHT);
     darkQuery.addEventListener("change", onTheme);
@@ -68,6 +76,8 @@ export function MapView() {
     return () => {
       darkQuery.removeEventListener("change", onTheme);
       stopSync();
+      stopMarker();
+      marker.remove();
       controller.dispose();
       map.remove();
     };

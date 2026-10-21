@@ -292,3 +292,104 @@ a.btn { text-decoration: none; display: inline-block; }
   .legend { bottom: 8px; }
   .footer { font-size: 10px; }
 }
+
+/* --- Bodový panel (desktop vpravo, mobil list zdola) --- */
+.sheet {
+  position: absolute;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.point-panel {
+  right: 10px;
+  top: 10px;
+  bottom: 10px;
+  width: min(480px, calc(100% - 20px));
+  border-radius: 10px;
+}
+.sheet-head { display: flex; align-items: flex-start; gap: 8px; padding: 10px 10px 6px 12px; }
+.sheet-title { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; font-family: var(--mono); font-size: 12px; }
+.run-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.icon-btn {
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  min-width: 36px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--border); }
+.tabs { display: flex; gap: 4px; padding: 0 10px 8px; border-bottom: 1px solid var(--border); align-items: center; }
+.tabs button {
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.tabs button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tab-model { margin-left: auto; max-width: 150px; }
+.sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 8px 10px 12px; }
+.note { font-size: 11px; margin: 6px 0; }
+
+/* uPlot vo farbách témy */
+.uplot-host { width: 100%; }
+.uplot, .u-legend { font-family: var(--font); color: var(--text); }
+.u-legend { font-size: 11px; text-align: left; }
+.u-legend .u-marker { width: 10px; height: 3px; }
+.u-legend th { font-weight: 500; }
+.meteogram .uplot + .uplot { margin-top: 2px; }
+
+.compare-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.model-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 2px 8px; }
+.swatch { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+
+/* Skew-T */
+.skewt-time { margin: 0 0 4px; font-family: var(--mono); font-size: 12px; }
+.skewt-svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.sk-frame { fill: none; stroke: var(--muted); stroke-width: 1; }
+.sk-isobar { stroke: var(--border); stroke-width: 1; }
+.sk-isotherm { stroke: var(--border); stroke-width: 0.8; }
+.sk-zero { stroke: #3b82f6; stroke-width: 1.2; }
+.sk-dry { fill: none; stroke: #c2410c; stroke-width: 0.6; opacity: 0.45; }
+.sk-moist { fill: none; stroke: #15803d; stroke-width: 0.6; opacity: 0.45; stroke-dasharray: 4 3; }
+.sk-mix { fill: none; stroke: #7c3aed; stroke-width: 0.6; opacity: 0.5; stroke-dasharray: 2 3; }
+.sk-mix-label { font-size: 8px; fill: #7c3aed; opacity: 0.8; }
+.sk-label { font-size: 10px; fill: var(--muted); font-family: var(--mono); }
+.sk-t { fill: none; stroke: #dc2626; stroke-width: 2.2; }
+.sk-td { fill: none; stroke: #16a34a; stroke-width: 2.2; }
+.sk-parcel { fill: none; stroke: var(--text); stroke-width: 1.2; stroke-dasharray: 5 3; }
+.sk-cape { fill: #f97316; opacity: 0.25; }
+.sk-barb { fill: none; stroke: var(--text); stroke-width: 1.2; }
+.sk-barb-fill { fill: var(--text); }
+.sk-level { stroke: var(--text); stroke-width: 1; }
+.sk-level-label { font-size: 9px; fill: var(--text); font-family: var(--mono); }
+.indices { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 8px 0; font-size: 12px; }
+.indices dt { color: var(--muted); }
+.indices dd { margin: 0; font-family: var(--mono); }
+
+@media (max-width: 700px) {
+  .point-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    height: 72%;
+    border-radius: 14px 14px 0 0;
+    border-bottom: none;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabs button { padding: 8px 14px; }
+}
+/* v meteograme ukazuje čas iba prvý graf */
+.meteogram .uplot-host:not(:first-of-type) .u-legend .u-series:first-child { display: none; }

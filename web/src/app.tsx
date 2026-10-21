@@ -4,10 +4,11 @@ import { MapView } from "./map/MapView";
 import { CursorTooltip } from "./panels/CursorTooltip";
 import { Footer } from "./panels/Footer";
 import { LayerPanel } from "./panels/LayerPanel";
+import { PointPanel } from "./panels/PointPanel";
 import { Legend } from "./panels/Legend";
 import { Timeline } from "./panels/Timeline";
 import { TopBar } from "./panels/TopBar";
-import { modelId, playing, refreshRun, stepTime } from "./state/store";
+import { modelId, playing, point, refreshRun, stepTime } from "./state/store";
 
 /** Klávesové skratky: ←/→ čas, medzerník play, M model, [ ] hladina (od Fázy 3) */
 function onKey(e: KeyboardEvent) {
@@ -21,6 +22,9 @@ function onKey(e: KeyboardEvent) {
       break;
     case "ArrowRight":
       stepTime(1);
+      break;
+    case "Escape":
+      point.value = null;
       break;
     case " ":
       playing.value = !playing.value;
@@ -58,6 +62,7 @@ export function App() {
         <LayerPanel />
         <Legend />
         <CursorTooltip />
+        <PointPanel />
       </main>
       <Timeline />
       <Footer />
