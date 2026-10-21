@@ -187,7 +187,7 @@ export function MainMenu() {
             </p>
             <p class="muted">
               Dáta: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0), modely DWD (ICON),
-              ECMWF, NOAA (GFS), Météo-France, UK Met Office. Mapa ©{" "}
+              ECMWF, NOAA (GFS), ČHMÚ (ALADIN), Météo-France, UK Met Office. Mapa ©{" "}
               <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a>,{" "}
               <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">
                 OpenStreetMap

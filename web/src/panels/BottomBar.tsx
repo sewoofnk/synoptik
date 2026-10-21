@@ -90,17 +90,16 @@ function LevelPills() {
 function ModelPills() {
   return (
     <div class="model-pills glass" role="radiogroup" aria-label="Model">
-      {MODELS.map((m) => (
+      {MODELS.filter((m) => m.enabled).map((m) => (
         <button
           key={m.id}
           role="radio"
           aria-checked={modelId.value === m.id}
           class={modelId.value === m.id ? "active" : ""}
-          disabled={!m.enabled}
           onClick={() => selectModel(m.id)}
-          title={m.enabled ? `${m.label} (M prepína)` : `${m.label} – pribudne neskôr`}
+          title={`${m.label} (M prepína)`}
         >
-          {m.label.replace(/ 0,25°$/, "")}
+          {m.label.replace(/ (0,25°|\d+ km)$/, "")}
           <small>{Math.round(m.resolutionDeg * 111)} km</small>
         </button>
       ))}

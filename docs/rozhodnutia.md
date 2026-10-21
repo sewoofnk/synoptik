@@ -4,6 +4,24 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-011 · 2026-10-21 · ALADIN CE 2 km (ČHMÚ) – detail pre Slovensko
+
+**Dôvod:** záujmová oblasť vlastníka je Slovensko, najmä východ. ICON-D2 končí na 20,34° E (R-009), ALADIN CE pokrýva celé Slovensko.
+
+**Overené:**
+- `data_spatial/chmi_aladin_central_europe_2km`: behy každých 6 h, 73 krokov po 1 h (+72 h), hladiny 1000–100 hPa (bez 975/900), 6 premenných v hladinách. Pri zemi T, Td a RH 2 m, MSLP, vietor 10 m **iba ako rýchlosť a smer**, nárazy, zrážky, oblačnosť, CAPE a viditeľnosť.
+- **Mriežka je Lambertova kužeľová (LCC)**, nie lat/lon. V metadátach je iba WKT bez začiatku a kroku. Parametre sú zo zdrojov Open-Meteo (`ChmiDomain.swift`): 1053 × 837 bodov, krok 2325 m, prvý bod 38,599° N 1,334° E, dotyková rovnobežka 46,244°, stredný poludník 17°, guľa R = 6 371 229 m. Riadok 0 je juh.
+- Test v Node (S3 vs. Forecast API `models=chmi_aladin_central_europe_2km`, najbližšia bunka) v 5 bodoch od Košíc po Barcelonu: teplota 2 m aj vietor sedia na desatinu.
+- **Vietor u/v v hladinách je zemepisný** (smer sedí s API aj pri Δλ = ±13°, kde by otočenie mriežky robilo ±9°). Netreba ho otáčať.
+
+**Riešenie:**
+- `lib/lcc.ts`: projekcia a prevzorkovanie LCC → pravidelná lat/lon mriežka 0,02° × 0,03° (~2,2 km pri 48° N) bilineárne, mimo oblasti NaN. Goniometria sa počíta raz na riadok a stĺpec, ~1 M buniek trvá desiatky ms. Ostatné vrstvy, izočiary, častice a popisok pod kurzorom tak pracujú bez zmeny.
+- Vietor 10 m: zložky u/v pre častice sa dopočítajú z rýchlosti a smeru (virtuálne premenné `wind_u/v_component_10m`). Farba vrstvy vetra berie rýchlosť priamo z modelu.
+- Bodové nástroje: ALADIN je v meteograme, Skew-T aj v porovnaní modelov (predvolene).
+- Overenie v prehliadači: teplota 2 m 12,1/12,1 °C, teplota 500 hPa −13,5/−13,5 °C. Pri vetre popisok interpoluje medzi bunkami a API vracia najbližšiu bunku, preto pri slabom premenlivom vetre 5 vs. 3,6 km/h (susedné bunky 6,8 a 7,9 km/h).
+
+---
+
 ## R-010 · 2026-10-21 · História na časovej osi (7 dní dozadu) a hranice štátov
 
 **Požiadavka vlastníka:** história ako vo Windy, napr. 7 dní dozadu a 10 dní dopredu.

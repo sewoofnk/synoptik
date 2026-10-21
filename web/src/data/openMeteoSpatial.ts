@@ -2,7 +2,7 @@
 // Štruktúra: data_spatial/<model>/<YYYY>/<MM>/<DD>/<hhmm>Z/<YYYY-MM-DDThhmm>.om
 // Posledný dokončený beh: data_spatial/<model>/latest.json, metadáta behu: <run>/meta.json
 
-import type { Bbox } from "../config/models";
+import type { Bbox, ModelDef } from "../config/models";
 import { parseWktBbox } from "./grid";
 
 export const S3_BUCKET = "https://openmeteo.s3.amazonaws.com";
@@ -40,7 +40,12 @@ export interface RunInfo extends RunPart {
   parts: RunPart[];
   /** Výrez, ktorý sa číta (globálne modely); null = celá mriežka */
   crop: Bbox | null;
+  /** Projektovaná mriežka modelu (ALADIN); null = pravidelná lat/lon */
+  projection: ModelDef["projection"] | null;
 }
+
+/** Vietor 10 m, ktorý model dodáva iba ako rýchlosť a smer (ALADIN) – u/v sa dopočíta */
+export const VIRTUAL_WIND_10M = ["wind_u_component_10m", "wind_v_component_10m"] as const;
 
 /** Open-Meteo používa ISO bez sekúnd ("2026-10-21T12:00Z"), Date ho prečíta priamo. */
 function parseUtc(s: string): Date {
@@ -69,6 +74,7 @@ export function parseMeta(spatialId: string, json: unknown): RunInfo {
     bbox: parseWktBbox(j.crs_wkt),
     parts: [],
     crop: null,
+    projection: null,
   };
 }
 
@@ -76,7 +82,7 @@ export function parseMeta(spatialId: string, json: unknown): RunInfo {
  * Spojí hlavný beh s doplnkovými priečinkami toho istého behu. Doplnok s iným init time
  * sa nepoužije (premenné by pochádzali z iného behu, než ukazuje UI).
  */
-export function combineRuns(primary: RunInfo, extras: RunInfo[], crop: Bbox | null): RunInfo {
+export function combineRuns(primary: RunInfo, extras: RunInfo[], crop: Bbox | null, projection: ModelDef["projection"] | null = null): RunInfo {
   const part = (r: RunInfo): RunPart => ({
     spatialId: r.spatialId,
     referenceTime: r.referenceTime,
@@ -86,7 +92,10 @@ export function combineRuns(primary: RunInfo, extras: RunInfo[], crop: Bbox | nu
   });
   const same = extras.filter((e) => e.referenceTime.getTime() === primary.referenceTime.getTime());
   const parts = [part(primary), ...same.map(part)];
-  return { ...primary, parts, crop, variables: [...new Set(parts.flatMap((p) => p.variables))] };
+  const vars = new Set(parts.flatMap((p) => p.variables));
+  // u/v 10 m z rýchlosti a smeru (častice, vrstva vetra)
+  if (vars.has("wind_speed_10m") && vars.has("wind_direction_10m")) for (const v of VIRTUAL_WIND_10M) vars.add(v);
+  return { ...primary, parts, crop, projection, variables: [...vars] };
 }
 
 /** Časť behu, z ktorej sa číta premenná v danom kroku (prvá, ktorá ju má) */

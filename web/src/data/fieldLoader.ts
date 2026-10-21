@@ -4,6 +4,7 @@
 
 import { BrowserBlockCache, LruBlockCache, OmDataType, OmHttpBackendPool, type BlockCache } from "@openmeteo/file-reader";
 import type { FieldSource } from "../config/layers.config";
+import { Lcc, reprojectLcc } from "../lib/lcc";
 import { dewpointFromRH } from "../lib/thermo";
 import { cropRanges, gridFromBbox, type Grid } from "./grid";
 import { partFor, stepUrl, type RunInfo } from "./openMeteoSpatial";
@@ -93,6 +94,21 @@ function cached(key: string): Promise<Field> | undefined {
   return p;
 }
 
+const lccCache = new Map<string, Lcc>();
+
+/** Pole z projektovanej mriežky (LCC) prevzorkované na lat/lon */
+function fromProjection(variable: string, raw: Float32Array, ny: number, nx: number, proj: NonNullable<RunInfo["projection"]>): Field {
+  const g = proj.grid;
+  if (ny !== g.ny || nx !== g.nx) throw new Error(`${variable}: mriežka ${ny}×${nx}, očakávaná ${g.ny}×${g.nx}`);
+  const key = JSON.stringify(g);
+  let lcc = lccCache.get(key);
+  if (!lcc) lccCache.set(key, (lcc = new Lcc(g)));
+  const t = proj.target;
+  const r = reprojectLcc(raw, lcc, t);
+  const [min, max] = minMax(r.data);
+  return { variable, grid: gridFromBbox([t.latMin, t.lonMin, t.latMax, t.lonMax], r.ny, r.nx), data: r.data, min, max };
+}
+
 async function readVariable(run: RunInfo, validTime: Date, variable: string): Promise<Field> {
   const part = partFor(run, variable, validTime);
   if (!part) throw new MissingVariableError(variable);
@@ -104,6 +120,11 @@ async function readVariable(run: RunInfo, validTime: Date, variable: string): Pr
     if (!v) throw new MissingVariableError(variable);
     try {
       const [ny, nx] = v.getDimensions() as [number, number];
+      if (run.projection) {
+        const raw = await v.read({ type: OmDataType.FloatArray, ranges: [{ start: 0, end: ny }, { start: 0, end: nx }] });
+        convertToSI(variable, raw);
+        return fromProjection(variable, raw, ny, nx, run.projection);
+      }
       // globálne modely: iba výrez Európy
       const c = run.crop ? cropRanges(part.bbox, ny, nx, run.crop) : { y0: 0, y1: ny, x0: 0, x1: nx, bbox: part.bbox };
       const data = await v.read({
@@ -126,6 +147,14 @@ const fieldKey = (run: RunInfo, validTime: Date, variable: string) =>
   `${run.spatialId}|${run.referenceTime.toISOString()}|${validTime.toISOString()}|${variable}`;
 
 export function loadField(run: RunInfo, validTime: Date, variable: string): Promise<Field> {
+  // vietor 10 m len ako rýchlosť a smer (ALADIN) → zložky u/v
+  if ((variable === "wind_u_component_10m" || variable === "wind_v_component_10m") && !partFor(run, variable, validTime)) {
+    const u = variable.includes("_u_");
+    return derived(run, validTime, `${variable}(polar)`, "wind_speed_10m", "wind_direction_10m", (s, d) =>
+      // meteorologický smer = odkiaľ fúka
+      u ? -s * Math.sin((d * Math.PI) / 180) : -s * Math.cos((d * Math.PI) / 180),
+    );
+  }
   const key = fieldKey(run, validTime, variable);
   return cached(key) ?? remember(key, readVariable(run, validTime, variable));
 }
@@ -166,6 +195,8 @@ export function loadSource(run: RunInfo, validTime: Date, src: FieldSource): Pro
     case "scalar":
       return loadField(run, validTime, src.variable);
     case "speed":
+      // model s vetrom 10 m iba ako rýchlosť a smer → rýchlosť priamo (nie z interpolovaných u/v)
+      if (src.u === "wind_u_component_10m" && !partFor(run, src.u, validTime)) return loadField(run, validTime, "wind_speed_10m");
       return loadSpeed(run, validTime, src.u, src.v);
     case "dewpoint":
       return derived(run, validTime, `dewpoint(${src.t})`, src.t, src.rh, dewpointFromRH);

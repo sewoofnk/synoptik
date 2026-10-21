@@ -236,7 +236,7 @@ async function loadModelRun(m: ModelDef, ref: string | null, signal?: AbortSigna
   const primary = ref ? await fetchRunMeta(primaryId, new Date(ref), signal) : await fetchLatestRun(primaryId, signal);
   // doplnok nemusí mať beh ešte hotový – vtedy jeho premenné chýbajú (vrstvy sa zablokujú)
   const extras = await Promise.all(extraIds.map((id) => fetchRunMeta(id, primary.referenceTime, signal).catch(() => null)));
-  return combineRuns(primary, extras.filter((e): e is RunInfo => e !== null), m.crop ?? null);
+  return combineRuns(primary, extras.filter((e): e is RunInfo => e !== null), m.crop ?? null, m.projection ?? null);
 }
 
 const pastRuns = new Map<string, Promise<RunInfo>>();

@@ -15,6 +15,7 @@ export interface PointModel {
 
 export const POINT_MODELS: readonly PointModel[] = [
   { id: "icon_eu", label: "ICON-EU", metaId: "dwd_icon_eu", hasCloudsAndPrecip: true, color: "#1f77b4" },
+  { id: "chmi_aladin_central_europe_2km", label: "ALADIN 2 km", metaId: "chmi_aladin_central_europe_2km", hasCloudsAndPrecip: true, color: "#e377c2" },
   { id: "icon_d2", label: "ICON-D2", metaId: "dwd_icon_d2", hasCloudsAndPrecip: true, color: "#17becf" },
   { id: "icon_global", label: "ICON global", metaId: "dwd_icon", hasCloudsAndPrecip: true, color: "#9467bd" },
   { id: "ecmwf_ifs025", label: "ECMWF IFS 0,25°", metaId: "ecmwf_ifs025", hasCloudsAndPrecip: true, color: "#d62728" },
@@ -29,5 +30,6 @@ export function getPointModel(id: string): PointModel {
 
 /** Mapový model → predvolený model pre bodové nástroje */
 export function pointModelForMap(mapModelId: string): string {
+  if (mapModelId === "aladin_ce") return "chmi_aladin_central_europe_2km";
   return POINT_MODELS.some((m) => m.id === mapModelId) ? mapModelId : "icon_eu";
 }
