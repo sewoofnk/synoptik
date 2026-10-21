@@ -19,6 +19,7 @@ Hotové:
 
 Otvorené:
 - [ ] Overiť 60 fps častíc v prehliadači s GPU (aj na iPhone)
+- [ ] **Spodný panel predpovede ako Windy** (požiadavka vlastníka, neskôr): po kliknutí na miesto dole hodinové tabuľky so záložkami *Základné* (ikony počasia, teplota + pocitová, zrážky, vietor + nárazy farebne, smer), *Meteogram* (rez oblačnosťou podľa výšky so zrážkami a tlakom, základňa oblakov), *Vietor* (riadok pre každý model + veterná ružica modelov na mape), *Kvalita ovzdušia* (AQI, PM2.5, PM10, prach, CO, NO₂, SO₂), *Airgram* (čas × tlakové hladiny: teplota, izotermy, 0 °C, vlajky, oblačnosť)
 - [ ] GitHub → Cloudflare Pages webhook: push 94e0d2d nespustil build, spustený ručne cez API. Overiť pri ďalších pushoch.
 
 ## Lokálne spustenie
