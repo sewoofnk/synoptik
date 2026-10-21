@@ -4,6 +4,7 @@
 import { batch, computed, effect, signal } from "@preact/signals";
 import { DEFAULT_LAYER_ID, getLayer, type OverlayId } from "../config/layers.config";
 import { DEFAULT_MODEL_ID, getModel, MODELS } from "../config/models";
+import { pointModelForMap } from "../config/pointModels";
 import { fetchLatestRun, fetchRunMeta, listRuns, type RunInfo } from "../data/openMeteoSpatial";
 import { isUnitSettings, PRESETS, type UnitSettings } from "../lib/units";
 import { decodeHash, encodeHash, type ViewState } from "./viewState";
@@ -73,6 +74,13 @@ export const runError = signal<string | null>(null);
 export const fieldStatus = signal<{ loading: boolean; error: string | null; note?: string }>({ loading: false, error: null });
 /** Hodnota pod kurzorom (nastavuje mapa) */
 export const cursor = signal<{ lat: number; lon: number; value: number; x: number; y: number } | null>(null);
+
+/** Bod vybraný klikom na mapu (pravý panel) */
+export const point = signal<{ lat: number; lon: number } | null>(null);
+export type PointTab = "meteogram" | "skewt" | "compare";
+export const pointTab = signal<PointTab>("meteogram");
+/** Model pre meteogram a Skew-T; predvolene podľa mapového modelu */
+export const pointModelId = signal(pointModelForMap(init.model));
 
 export const model = computed(() => getModel(modelId.value));
 export const layer = computed(() => getLayer(layerId.value)!);

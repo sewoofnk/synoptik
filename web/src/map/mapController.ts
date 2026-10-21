@@ -16,6 +16,7 @@ import {
   overlays,
   playing,
   playSpeed,
+  point,
   runInfo,
   setTimeIndex,
   timeIndex,
@@ -71,6 +72,10 @@ export class MapController {
     map.on("mousemove", (e) => {
       this.lastMouse = { lng: e.lngLat.lng, lat: e.lngLat.lat, x: e.point.x, y: e.point.y };
       this.updateCursor();
+    });
+    // klik → bodové nástroje v pravom paneli
+    map.on("click", (e) => {
+      point.value = { lat: e.lngLat.lat, lon: e.lngLat.lng };
     });
     map.on("mouseout", () => {
       this.lastMouse = null;

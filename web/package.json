@@ -16,7 +16,8 @@
     "@preact/signals": "2.11.3",
     "d3-contour": "4.0.2",
     "maplibre-gl": "6.15.0",
-    "preact": "10.29.8"
+    "preact": "10.29.8",
+    "uplot": "1.6.32"
   },
   "devDependencies": {
     "@preact/preset-vite": "2.10.6",
