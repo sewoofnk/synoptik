@@ -16,6 +16,7 @@ Hotové:
   - Klik do grafu posunie čas mapy; Skew-T sa riadi časom mapy
 - Fáza 3 ([R-009](docs/rozhodnutia.md)): hladiny povrch/850/700/500/300/250 hPa (klávesy `[` `]`), teplota, rosný bod, vietor, vlhkosť, geopotenciál v hladinách, relatívna topografia 500/1000; izobary/izohypsy a izotermy; častice vetra v hladine; modely **ECMWF IFS 0,25°** a **GFS 0,25°** (výrez Európy z globálnej mriežky)
 - Fáza 4 ([R-012](docs/rozhodnutia.md)): vrstvy CAPE, CIN, Lifted Index, strih vetra 0–6 km a nulová izoterma (podľa dostupnosti v modeli); záložka **Ensemble** (ECMWF ENS, ICON EPS, GEFS, AIFS): členy, medián, 10./90. percentil, pravdepodobnosť prekročenia prahu
+- **Spodný panel predpovede ako Windy** ([R-013](docs/rozhodnutia.md)): po kliknutí na miesto tabuľky Základné, Vietor (všetky modely), Airgram, Kvalita ovzdušia + Meteogram, Skew-T, Modely, Ensemble; názov miesta z OSM
 - **ALADIN 2 km (ČHMÚ)** na mape aj v bodových nástrojoch – detail celého Slovenska vrátane východu; projekcia LCC sa prevzorkuje na lat/lon ([R-011](docs/rozhodnutia.md))
 - **História** na časovej osi 7 dní dozadu z minulých behov, predpoveď do konca behu (GFS 16 dní); štítok ukazuje beh každého kroku ([R-010](docs/rozhodnutia.md))
 - Nastaviteľná farba a hrúbka hraníc štátov (aj krajov) v menu
@@ -25,7 +26,7 @@ Hotové:
 Otvorené:
 - [ ] Ďalšie modely s vysokým rozlíšením: AROME Austria (po 22,1° E, bez hladín); ICON-D2 východ SK nepokrýva ([R-009](docs/rozhodnutia.md))
 - [ ] Overiť 60 fps častíc v prehliadači s GPU (aj na iPhone)
-- [ ] **Spodný panel predpovede ako Windy** (požiadavka vlastníka, neskôr): po kliknutí na miesto dole hodinové tabuľky so záložkami *Základné* (ikony počasia, teplota + pocitová, zrážky, vietor + nárazy farebne, smer), *Meteogram* (rez oblačnosťou podľa výšky so zrážkami a tlakom, základňa oblakov), *Vietor* (riadok pre každý model + veterná ružica modelov na mape), *Kvalita ovzdušia* (AQI, PM2.5, PM10, prach, CO, NO₂, SO₂), *Airgram* (čas × tlakové hladiny: teplota, izotermy, 0 °C, vlajky, oblačnosť)
+- [ ] Spodný panel – doplnky: rez oblačnosťou podľa výšky v meteograme, základňa oblakov, veterná ružica modelov na mape, história v meteograme (`past_days`)
 - [ ] GitHub → Cloudflare Pages webhook: push 94e0d2d nespustil build, spustený ručne cez API. Overiť pri ďalších pushoch.
 
 ## Lokálne spustenie

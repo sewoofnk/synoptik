@@ -19,7 +19,8 @@ export const POINT_MODELS: readonly PointModel[] = [
   { id: "icon_d2", label: "ICON-D2", metaId: "dwd_icon_d2", hasCloudsAndPrecip: true, color: "#17becf" },
   { id: "icon_global", label: "ICON global", metaId: "dwd_icon", hasCloudsAndPrecip: true, color: "#9467bd" },
   { id: "ecmwf_ifs025", label: "ECMWF IFS 0,25°", metaId: "ecmwf_ifs025", hasCloudsAndPrecip: true, color: "#d62728" },
-  { id: "gfs025", label: "GFS 0,25°", metaId: "ncep_gfs025", hasCloudsAndPrecip: false, color: "#ff7f0e" },
+  // gfs_seamless = GFS 0,25° (hladiny) + 0,13° (prízemné polia, zrážky, oblačnosť); gfs025 samotný zrážky nemá
+  { id: "gfs_seamless", label: "GFS", metaId: "ncep_gfs013", hasCloudsAndPrecip: true, color: "#ff7f0e" },
   { id: "meteofrance_arpege_europe", label: "ARPEGE Europe", metaId: "meteofrance_arpege_europe", hasCloudsAndPrecip: true, color: "#2ca02c" },
   { id: "ukmo_global_deterministic_10km", label: "UKMO 10 km", metaId: "ukmo_global_deterministic_10km", hasCloudsAndPrecip: true, color: "#8c564b" },
 ];
@@ -31,5 +32,6 @@ export function getPointModel(id: string): PointModel {
 /** Mapový model → predvolený model pre bodové nástroje */
 export function pointModelForMap(mapModelId: string): string {
   if (mapModelId === "aladin_ce") return "chmi_aladin_central_europe_2km";
+  if (mapModelId === "gfs025") return "gfs_seamless";
   return POINT_MODELS.some((m) => m.id === mapModelId) ? mapModelId : "icon_eu";
 }

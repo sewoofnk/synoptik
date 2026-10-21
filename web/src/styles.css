@@ -620,27 +620,132 @@ select {
 .unit-grid { display: grid; gap: 6px; }
 .unit-grid label { display: flex; align-items: center; justify-content: space-between; }
 .about p { margin: 0 0 8px; }
+.credit { margin-top: 14px !important; padding-top: 10px; border-top: 1px solid var(--border); text-align: center; font-weight: 700; letter-spacing: 0.02em; }
 
-/* --- Bodový panel (desktop vľavo, mobil list zdola) --- */
-.sheet {
+/* --- Spodný panel predpovede (ako Windy): cez celú šírku nad časovou osou --- */
+.app { --fp-h: min(46vh, 430px); }
+.fpanel {
   position: absolute;
   z-index: 15;
+  left: 0;
+  right: 0;
+  bottom: var(--tl-h, 80px);
+  height: var(--fp-h);
   display: flex;
   flex-direction: column;
   background: var(--panel-solid);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+  animation: sheet-up 0.18s ease-out;
 }
-.point-panel {
-  left: calc(var(--safe-l) + var(--gap));
-  top: calc(var(--safe-t) + var(--gap) + 74px);
-  bottom: calc(var(--tl-h, 90px) + var(--gap));
-  width: min(480px, calc(100% - 2 * var(--gap)));
-  border-radius: 12px;
-}
+@keyframes sheet-up { from { transform: translateY(30px); opacity: 0; } }
+/* pri otvorenom paneli: ovládanie mapy dole preč, pravý stĺpec a atribúcia nad panel */
+.app.has-point .bottom-controls { display: none; }
+.app.has-point .right-stack { bottom: calc(var(--tl-h, 80px) + var(--fp-h) + var(--gap)); }
+.app.has-point .maplibregl-ctrl-bottom-left { bottom: calc(var(--tl-h, 80px) + var(--fp-h) + 4px); }
 .sheet-grip { display: none; }
-.sheet-head { display: flex; align-items: flex-start; gap: 8px; padding: 10px 8px 6px 12px; }
-.sheet-title { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; font-family: var(--mono); font-size: 12px; }
+.fp-head { display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 14px; border-bottom: 1px solid var(--border); }
+.fp-title { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; font-size: 12px; }
+.fp-title .place { font-size: 16px; }
+.fp-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: #b3261e;
+  color: #fff;
+  cursor: pointer;
+}
+.fp-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+/* grafy v širokom paneli: odsadenie, Skew-T a ensemble s rozumnou šírkou */
+.fp-body.meteogram,
+.fp-body.compare,
+.fp-body.ensemble,
+.fp-body.skewt { padding: 8px 12px; }
+.fp-body.skewt .skewt,
+.fp-body.ensemble .ensemble { max-width: 760px; margin: 0 auto; }
+.fp-body.skewt .skewt-svg { max-width: 520px; margin: 0 auto; }
+.pad { padding: 8px 12px; }
+.fp-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px calc(4px + var(--safe-b, 0px));
+  background: #8f1d1d;
+  color: #fff;
+}
+.fp-tablist { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; }
+.fp-tablist::-webkit-scrollbar { display: none; }
+.fp-tablist button {
+  flex: none;
+  min-height: 34px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  cursor: pointer;
+}
+.fp-tablist button.active { background: rgba(255, 255, 255, 0.22); color: #fff; }
+.fp-source { flex: none; display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.fp-source select { background: rgba(255, 255, 255, 0.12); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+.fp-source option { color: #111; }
+
+/* hodinové tabuľky */
+.ftable-scroll { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
+.ftable { border-collapse: separate; border-spacing: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.ftable th.lbl {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 104px;
+  padding: 0 8px;
+  background: var(--panel-solid);
+  color: var(--muted);
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+  border-right: 1px solid var(--border);
+}
+.ftable .lbl .unit { margin-left: 5px; font-size: 10px; opacity: 0.85; }
+.ftable td,
+.ftable .hours th { min-width: 40px; height: 26px; padding: 0 2px; text-align: center; white-space: nowrap; cursor: pointer; }
+.ftable .hours th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+.ftable .days th.day { padding: 5px 6px 3px; text-align: left; font-weight: 700; border-left: 1px solid var(--border); white-space: nowrap; }
+.ftable tr.tall td { height: 34px; }
+.ftable tr.small td { height: 20px; font-size: 10.5px; color: var(--muted); }
+.ftable .night { background-image: linear-gradient(rgba(70, 80, 120, 0.1), rgba(70, 80, 120, 0.1)); }
+.ftable .now { box-shadow: inset 2px 0 0 var(--accent), inset -2px 0 0 var(--accent); }
+.ftable .hours th.now { color: var(--accent); }
+.wicon { font-size: 20px; line-height: 1; }
+.warrow { display: inline-block; font-weight: 800; font-size: 14px; line-height: 1; }
+.wcell { display: inline-flex; align-items: center; gap: 2px; }
+.mlabel { padding-left: 6px; border-left: 3px solid; color: var(--text); font-weight: 600; }
+.aqi { display: inline-flex; flex-direction: column; line-height: 1.1; font-weight: 700; }
+.aqi small { font-size: 8.5px; font-weight: 500; }
+
+/* airgram */
+.airgram { display: flex; padding: 4px 0; }
+.ag-axis { position: relative; flex: none; width: 42px; }
+.ag-axis span { position: absolute; right: 5px; font: 10px var(--mono); color: var(--muted); }
+.ag-scroll { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; }
+.ag-plot { position: relative; cursor: pointer; }
+.ag-plot canvas, .ag-plot svg { position: absolute; left: 0; }
+.ag-plot svg { top: 0; }
+.ag-iso { fill: none; stroke: rgba(0, 0, 0, 0.45); stroke-width: 0.8; }
+.ag-zero { fill: none; stroke: #fff; stroke-width: 2.4; }
+.ag-isobar { stroke: rgba(255, 255, 255, 0.4); stroke-dasharray: 2 4; }
+.ag-day { stroke: rgba(0, 0, 0, 0.3); }
+.ag-daylbl { font: 700 11px var(--font); fill: var(--text); }
+.ag-isolbl { font: 700 9px var(--mono); fill: #111; paint-order: stroke; stroke: rgba(255, 255, 255, 0.7); stroke-width: 2px; }
+.ag-barb { fill: none; stroke: #111; stroke-width: 1.1; }
+.ag-barb-fill { fill: #111; }
+.ag-now { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
+
 .run-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .icon-btn {
   display: grid;
@@ -664,7 +769,6 @@ select {
 }
 .tabs button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .tab-model { margin-left: auto; max-width: 150px; }
-.sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 8px 10px 12px; }
 .note { margin: 6px 0; font-size: 11px; }
 .opt { display: flex; align-items: center; gap: 6px; min-height: 30px; cursor: pointer; }
 
@@ -742,27 +846,18 @@ select {
   .footer { font-size: 9.5px; }
   .footer .link { display: none; }
 
-  /* bodový panel ako list zdola */
-  .point-panel {
-    left: 0;
-    right: 0;
-    top: auto;
-    bottom: 0;
-    width: 100%;
-    height: min(78dvh, calc(100% - var(--safe-t) - 48px));
-    z-index: 20;
-    border-radius: 16px 16px 0 0;
-    border-bottom: 0;
-    padding-bottom: var(--safe-b);
-    animation: sheet-up 0.2s ease-out;
-  }
-  @keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } }
-  .sheet-grip { display: flex; justify-content: center; padding: 8px 0 2px; touch-action: none; cursor: grab; }
+  /* spodný panel: väčšia výška, úchyt na zatvorenie, z pravého stĺpca iba Prihlásiť a Menu */
+  .app { --fp-h: 56dvh; }
+  .fpanel { border-radius: 14px 14px 0 0; }
+  .app.has-point .quick-list { display: none; }
+  .sheet-grip { display: flex; justify-content: center; padding: 6px 0 0; touch-action: none; cursor: grab; }
   .sheet-grip span { width: 40px; height: 5px; border-radius: 3px; background: var(--border); }
-  .sheet-head { padding-top: 2px; }
-  .tabs { flex-wrap: wrap; row-gap: 6px; }
-  .tabs button { padding: 7px 12px; flex: none; }
-  .tab-model { flex: 1 1 96px; max-width: 180px; }
+  .fp-head { padding-top: 2px; }
+  .fp-title .place { font-size: 15px; }
+  .fp-source span { display: none; }
+  .fp-source select { max-width: 112px; min-height: 32px; padding: 4px 6px; }
+  .ftable th.lbl { min-width: 78px; padding: 0 5px; font-size: 11px; }
+  .ftable .lbl .unit { display: block; margin: 0; }
 
   /* mierka mapy zaberá miesto; atribúcia (i) nad spodnými ovládacími prvkami */
   .maplibregl-ctrl-scale { display: none; }

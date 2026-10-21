@@ -4,6 +4,25 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-013 · 2026-10-21 · Spodný panel predpovede pre miesto (ako Windy)
+
+**Požiadavka vlastníka** (screenshoty Windy): po kliknutí na miesto sa dole zobrazí panel s tabuľkami.
+
+- **Rozloženie:** panel ide cez celú šírku nad časovou osou (desktop ~46 % výšky, mobil 56 dvh, úchyt zavrie potiahnutím). Pri otvorenom paneli sa skryje spodné ovládanie mapy (prekrytia, modely, legenda). Pravý stĺpec a atribúcia sa posunú nad panel, na mobile ostane z pravého stĺpca iba Prihlásiť a Menu.
+- **Hlavička:** názov miesta (OSM **Nominatim** spätné geokódovanie, `zoom=12`, `accept-language=sk`, CORS *, najviac 1 požiadavka za sekundu podľa pravidiel Nominatim, cache na ~1 km), súradnice, model a beh. Zatváracie tlačidlo je červený kruh.
+- **Lišta záložiek dole** (tmavočervená ako vo Windy) a „Zdroj“ (model) pre záložky, ktoré ho používajú:
+  - **Základné:** hodinová tabuľka po 3 h (UTC 00/03/…, popisky v lokálnom čase prehliadača), dni v hlavičke, noc zatienená (`is_day`), ikona počasia (WMO `weather_code` → emoji, v 3 h okne najvýraznejší jav), teplota a pocitová, zrážky za 3 h, vietor, nárazy (max za 3 h) a smer. Farby buniek sú z rovnakých škál ako mapa.
+  - **Meteogram** (uPlot, ako doteraz).
+  - **Vietor:** riadok pre každý model (ICON-EU, ALADIN, ECMWF, GFS, ICON-D2, ARPEGE, UKMO; modely mimo bodu sa vynechajú) so šípkou, rýchlosťou a nárazmi.
+  - **Airgram:** čas × tlak 1000–200 hPa, raster teploty (bilineárne v čase a ln p), izotermy po 5 °C (d3-contour), čiara 0 °C biela, vlajky vetra každých 6 h, pod terénom sivé (tlak pri zemi).
+  - **Kvalita ovzdušia:** Open-Meteo **Air Quality API** (CAMS Európa, 5 dní, CORS *). EAQI s pásmom, PM2.5, PM10, prach, CO, NO₂, SO₂, O₃. Farby podľa pásiem EEA.
+  - **Skew-T, Modely, Ensemble** ako doteraz.
+- Klik na stĺpec tabuľky alebo do airgramu nastaví čas mapy. Stĺpec s časom mapy je zvýraznený.
+- **GFS v bodových nástrojoch:** `gfs025` v Forecast API nemá `weather_code`, zrážky ani oblačnosť. Používa sa `gfs_seamless` (0,25° hladiny + 0,13° prízemné polia, beh z `ncep_gfs013`).
+- Overené v prehliadači (desktop 1400×860, iPhone 13): všetky záložky sa načítajú bez chýb, názov miesta „Spišská Belá“ a „Huncovce“.
+
+---
+
 ## R-012 · 2026-10-21 · Fáza 4: konvekcia a ensemble
 
 **Konvekčné vrstvy – dostupnosť** (overené v `data_spatial` a Forecast API):

@@ -30,7 +30,7 @@ const VARS: CompareVar[] = [
   { id: "geopotential_height_500hPa", label: "Geopotenciál 500 hPa", quantity: "height" },
 ];
 
-const DEFAULT_MODELS = ["icon_eu", "chmi_aladin_central_europe_2km", "ecmwf_ifs025", "gfs025"];
+const DEFAULT_MODELS = ["icon_eu", "chmi_aladin_central_europe_2km", "ecmwf_ifs025", "gfs_seamless"];
 
 interface Props {
   lat: number;

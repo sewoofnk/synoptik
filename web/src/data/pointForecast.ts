@@ -43,7 +43,7 @@ export type PointData = Record<string, PointSeries>;
 /** Prevod z jednotiek API (°C, hPa, m/s) na SI podľa názvu premennej */
 function toSI(name: string, v: number | null): number | null {
   if (v === null) return null;
-  if (name.startsWith("temperature") || name.startsWith("dew_point")) return v + 273.15;
+  if (name.startsWith("temperature") || name.startsWith("dew_point") || name === "apparent_temperature") return v + 273.15;
   if (name.startsWith("pressure") || name.startsWith("surface_pressure")) return v * 100;
   return v;
 }

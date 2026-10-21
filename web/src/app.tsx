@@ -76,7 +76,7 @@ export function App() {
   }, []);
 
   return (
-    <div class="app">
+    <div class={`app ${point.value ? "has-point" : ""}`}>
       <MapView />
       <CursorTooltip />
       <InfoChip />

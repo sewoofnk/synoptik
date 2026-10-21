@@ -212,6 +212,7 @@ export function MainMenu() {
               </a>
               .
             </p>
+            <p class="credit">© CLOUDY by Olejnik Matuš</p>
           </section>
         </div>
       </aside>
