@@ -4,7 +4,8 @@ import { AttributionControl, Map as MlMap, Marker, ScaleControl, setWorkerUrl } 
 import "maplibre-gl/dist/maplibre-gl.css";
 // MapLibre v6 načítava worker ako samostatný ES modul – Vite ho musí vydať ako asset
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
-import { mapView, point } from "../state/store";
+import { borders, mapView, point } from "../state/store";
+import { applyBorders, captureBorderDefaults } from "./borders";
 import { MapController } from "./mapController";
 import { setMapInstance } from "./mapInstance";
 
@@ -66,6 +67,16 @@ export function MapView() {
       }
     });
 
+    // Hranice štátov podľa nastavenia (po každom načítaní štýlu – aj pri zmene témy)
+    map.on("style.load", () => {
+      captureBorderDefaults(map);
+      applyBorders(map, borders.peek());
+    });
+    const stopBorders = effect(() => {
+      const b = borders.value;
+      if (map.isStyleLoaded()) applyBorders(map, b);
+    });
+
     // Značka vybraného bodu (bodové nástroje)
     const marker = new Marker({ color: "#e5484d", scale: 0.8 });
     const stopMarker = effect(() => {
@@ -82,6 +93,7 @@ export function MapView() {
       darkQuery.removeEventListener("change", onTheme);
       stopSync();
       stopMarker();
+      stopBorders();
       marker.remove();
       controller.dispose();
       setMapInstance(null);

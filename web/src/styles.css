@@ -391,6 +391,52 @@ select {
   overflow: hidden;
 }
 .tl-day b { color: var(--text); font-weight: 600; }
+/* história (minulé behy) na osi a značka „teraz“ */
+.tl-history {
+  position: absolute;
+  left: 0;
+  top: -2px;
+  bottom: -2px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(135deg, var(--border) 0 4px, transparent 4px 8px);
+  opacity: 0.9;
+}
+.tl-rail .tl-progress { position: relative; }
+.tl-now { position: absolute; top: 10px; height: 22px; width: 2px; margin-left: -1px; background: var(--error); border-radius: 1px; pointer-events: none; }
+.tl-bubble.past { background: var(--muted); }
+.now-btn {
+  flex: none;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.now-btn.away { background: var(--accent); border-color: var(--accent); color: #fff; }
+.hist-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--muted);
+  color: var(--panel-solid);
+  font: 700 10px var(--font);
+  vertical-align: 1px;
+}
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.swatch-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+.swatch-btn.default { background: linear-gradient(135deg, #b3b3b3 50%, #3a3a3a 50%); }
+.swatch-btn.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent); }
 
 /* --- Pätička --- */
 .footer {

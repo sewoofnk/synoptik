@@ -2,7 +2,9 @@ import { COLOR_SCALES, cssGradient } from "../config/colorscales";
 import { CATEGORY_LABELS, isLayerAvailable, LAYERS, OVERLAYS, overlayVariables, previewScale, type LayerCategory } from "../config/layers.config";
 import { MODELS } from "../config/models";
 import { formatRun } from "../lib/time";
+import { BORDER_COLORS } from "../map/borders";
 import {
+  borders,
   layer,
   layerId,
   level,
@@ -116,6 +118,47 @@ export function MainMenu() {
                 />
               </label>
             ))}
+          </section>
+
+          <section>
+            <h3>Hranice štátov</h3>
+            <div class="swatches" role="radiogroup" aria-label="Farba hraníc">
+              {BORDER_COLORS.map((c) => (
+                <button
+                  key={c.id}
+                  role="radio"
+                  aria-checked={borders.value.color === c.id}
+                  class={`swatch-btn ${borders.value.color === c.id ? "active" : ""} ${c.id === "default" ? "default" : ""}`}
+                  style={c.id === "default" ? undefined : { background: c.id }}
+                  onClick={() => (borders.value = { ...borders.value, color: c.id })}
+                  title={c.label}
+                  aria-label={c.label}
+                />
+              ))}
+            </div>
+            <div class="segmented" aria-label="Hrúbka hraníc">
+              {([1, 2, 3] as const).map((w) => (
+                <button
+                  key={w}
+                  class={borders.value.width === w ? "active" : ""}
+                  disabled={borders.value.color === "default"}
+                  onClick={() => (borders.value = { ...borders.value, width: w })}
+                >
+                  {w === 1 ? "Tenké" : w === 2 ? "Stredné" : "Hrubé"}
+                </button>
+              ))}
+            </div>
+            <label class={`switch-row ${borders.value.color === "default" ? "disabled" : ""}`}>
+              <span>Aj hranice krajov a regiónov</span>
+              <input
+                type="checkbox"
+                role="switch"
+                class="switch"
+                checked={borders.value.regions}
+                disabled={borders.value.color === "default"}
+                onChange={(e) => (borders.value = { ...borders.value, regions: e.currentTarget.checked })}
+              />
+            </label>
           </section>
 
           <section>

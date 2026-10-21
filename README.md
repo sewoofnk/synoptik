@@ -15,11 +15,12 @@ Hotové:
   - Porovnanie 7 modelov pre zvolenú veličinu, pri každom modeli posledný beh
   - Klik do grafu posunie čas mapy; Skew-T sa riadi časom mapy
 - Fáza 3 ([R-009](docs/rozhodnutia.md)): hladiny povrch/850/700/500/300/250 hPa (klávesy `[` `]`), teplota, rosný bod, vietor, vlhkosť, geopotenciál v hladinách, relatívna topografia 500/1000; izobary/izohypsy a izotermy; častice vetra v hladine; modely **ECMWF IFS 0,25°** a **GFS 0,25°** (výrez Európy z globálnej mriežky)
+- **História** na časovej osi 7 dní dozadu z minulých behov, predpoveď do konca behu (GFS 16 dní); štítok ukazuje beh každého kroku ([R-010](docs/rozhodnutia.md))
+- Nastaviteľná farba a hrúbka hraníc štátov (aj krajov) v menu
 - UI podľa Windy, pre desktop aj mobil ([R-008](docs/rozhodnutia.md)): mapa cez celú obrazovku, rýchle vrstvy vpravo, menu s dlaždicami, modely, legenda s prepínaním jednotky, časová os s dňami, bodový panel ako list zdola na mobile
 - Verejná stránka, prihlásenie cez Cloudflare Access na `/prihlasenie` ([R-007](docs/rozhodnutia.md))
 
 Otvorené:
-- [ ] **História na časovej osi** (7 dní dozadu) a 10 dní dopredu (požiadavka vlastníka, ďalší krok)
 - [ ] Modely s vysokým rozlíšením pre Slovensko: ALADIN CE 2 km (projektovaná mriežka), AROME Austria; ICON-D2 východ SK nepokrýva ([R-009](docs/rozhodnutia.md))
 - [ ] Overiť 60 fps častíc v prehliadači s GPU (aj na iPhone)
 - [ ] **Spodný panel predpovede ako Windy** (požiadavka vlastníka, neskôr): po kliknutí na miesto dole hodinové tabuľky so záložkami *Základné* (ikony počasia, teplota + pocitová, zrážky, vietor + nárazy farebne, smer), *Meteogram* (rez oblačnosťou podľa výšky so zrážkami a tlakom, základňa oblakov), *Vietor* (riadok pre každý model + veterná ružica modelov na mape), *Kvalita ovzdušia* (AQI, PM2.5, PM10, prach, CO, NO₂, SO₂), *Airgram* (čas × tlakové hladiny: teplota, izotermy, 0 °C, vlajky, oblačnosť)

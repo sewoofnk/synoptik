@@ -3,14 +3,17 @@
 
 import { batch, computed, effect, signal, untracked } from "@preact/signals";
 import { DEFAULT_LAYER_ID, getLayer, LEVELS, resolveLayer, type Level, type OverlayId } from "../config/layers.config";
-import { DEFAULT_MODEL_ID, getModel, MODELS } from "../config/models";
+import { DEFAULT_MODEL_ID, getModel, MODELS, type ModelDef } from "../config/models";
 import { pointModelForMap } from "../config/pointModels";
 import { combineRuns, fetchLatestRun, fetchRunMeta, listRuns, type RunInfo } from "../data/openMeteoSpatial";
+import { buildTimeline, nearestStepIndex, type Step } from "../data/timeline";
 import { isUnitSettings, PRESETS, type UnitSettings } from "../lib/units";
+import { DEFAULT_BORDERS, isBorderSettings, type BorderSettings } from "../map/borders";
 import { decodeHash, encodeHash, type ViewState } from "./viewState";
 
 const LS_VIEW = "synoptik.view";
 const LS_UNITS = "synoptik.units";
+const LS_BORDERS = "synoptik.borders";
 
 const DEFAULT_VIEW: ViewState = {
   model: DEFAULT_MODEL_ID,
@@ -62,10 +65,13 @@ export const layerId = signal(init.layer);
 /** Zvolená hladina; vrstvy bez variantu pre hladinu sa kreslia pri povrchu */
 export const level = signal<Level>(init.level);
 export const overlays = signal<OverlayId[]>(init.overlays);
-/** Vybraný čas platnosti (ISO); null = prvý krok */
+/** Vybraný čas platnosti (ISO); null = najbližšie k teraz */
 export const timeIso = signal<string | null>(init.time);
 export const mapView = signal({ center: init.center, zoom: init.zoom });
 export const units = signal<UnitSettings>(isUnitSettings(storedUnits) ? storedUnits : { ...PRESETS.metric });
+const storedBorders = readLocal<unknown>(LS_BORDERS);
+/** Farba a hrúbka hraníc štátov (nastavenie v menu) */
+export const borders = signal<BorderSettings>(isBorderSettings(storedBorders) ? storedBorders : { ...DEFAULT_BORDERS });
 
 export const playing = signal(false);
 /** Krokov za sekundu */
@@ -93,29 +99,41 @@ export const model = computed(() => getModel(modelId.value));
 /** Vrstva vyriešená pre zvolenú hladinu (zdroj, škála, názov s hladinou) */
 export const layer = computed(() => resolveLayer(getLayer(layerId.value)!, level.value));
 
-/** Index aktuálneho kroku v runInfo.validTimes (najbližší k timeIso) */
-export const timeIndex = computed(() => {
+/** Teraz – obnovuje sa každých 10 min (posúva začiatok histórie) */
+const nowTick = signal(Date.now());
+setInterval(() => (nowTick.value = Date.now()), 600_000);
+
+/** Kroky časovej osi: história (7 dní z minulých behov) + aktuálny beh – R-010 */
+export const steps = computed<Step[]>(() => {
   const r = runInfo.value;
-  if (!r || r.validTimes.length === 0) return -1;
-  const t = timeIso.value ? Date.parse(timeIso.value) : NaN;
-  if (Number.isNaN(t)) return 0;
-  let best = 0;
-  for (let i = 1; i < r.validTimes.length; i++) {
-    if (Math.abs(r.validTimes[i]!.getTime() - t) < Math.abs(r.validTimes[best]!.getTime() - t)) best = i;
-  }
-  return best;
+  if (!r) return [];
+  return buildTimeline(r, runs.value, model.value.historyStepHours, new Date(nowTick.value));
 });
 
-export const validTime = computed(() => {
-  const i = timeIndex.value;
-  return i >= 0 ? runInfo.value!.validTimes[i]! : null;
+/** Index aktuálneho kroku (najbližší k timeIso, bez neho k teraz) */
+export const timeIndex = computed(() => {
+  const s = steps.value;
+  if (s.length === 0) return -1;
+  const t = timeIso.value ? Date.parse(timeIso.value) : NaN;
+  return nearestStepIndex(s, Number.isNaN(t) ? nowTick.value : t);
 });
+
+export const currentStep = computed<Step | null>(() => {
+  const i = timeIndex.value;
+  return i >= 0 ? steps.value[i]! : null;
+});
+
+export const validTime = computed(() => currentStep.value?.t ?? null);
 
 export function setTimeIndex(i: number) {
-  const r = runInfo.value;
-  if (!r || r.validTimes.length === 0) return;
-  const clamped = Math.max(0, Math.min(r.validTimes.length - 1, i));
-  timeIso.value = r.validTimes[clamped]!.toISOString();
+  const s = steps.value;
+  if (s.length === 0) return;
+  timeIso.value = s[Math.max(0, Math.min(s.length - 1, i))]!.t.toISOString();
+}
+
+/** Skok na krok najbližší k teraz */
+export function goToNow() {
+  timeIso.value = null;
 }
 
 export function stepTime(delta: number) {
@@ -189,6 +207,7 @@ effect(() => {
 });
 
 effect(() => writeLocal(LS_UNITS, units.value));
+effect(() => writeLocal(LS_BORDERS, borders.value));
 
 // Späť/vpred v prehliadači alebo ručne zmenený hash
 window.addEventListener("hashchange", () => {
@@ -211,17 +230,47 @@ window.addEventListener("hashchange", () => {
 const runReload = signal(0);
 
 let runAbort: AbortController | null = null;
-/** Hlavný beh + doplnkové priečinky toho istého behu (GFS) */
-async function loadRun(choice: string | null, signal: AbortSignal): Promise<RunInfo> {
-  const m = model.peek();
+/** Hlavný beh + doplnkové priečinky toho istého behu (GFS); `ref` null = najnovší */
+async function loadModelRun(m: ModelDef, ref: string | null, signal?: AbortSignal): Promise<RunInfo> {
   const [primaryId, ...extraIds] = m.sources as [string, ...string[]];
-  const primary = choice ? await fetchRunMeta(primaryId, new Date(choice), signal) : await fetchLatestRun(primaryId, signal);
+  const primary = ref ? await fetchRunMeta(primaryId, new Date(ref), signal) : await fetchLatestRun(primaryId, signal);
   // doplnok nemusí mať beh ešte hotový – vtedy jeho premenné chýbajú (vrstvy sa zablokujú)
-  const extras = await Promise.all(
-    extraIds.map((id) => fetchRunMeta(id, primary.referenceTime, signal).catch(() => null)),
-  );
+  const extras = await Promise.all(extraIds.map((id) => fetchRunMeta(id, primary.referenceTime, signal).catch(() => null)));
   return combineRuns(primary, extras.filter((e): e is RunInfo => e !== null), m.crop ?? null);
 }
+
+const pastRuns = new Map<string, Promise<RunInfo>>();
+
+/** Beh pre krok časovej osi: aktuálny, alebo minulý (metadáta sa načítajú raz a cachujú) */
+export function resolveRun(ref: Date): Promise<RunInfo> {
+  const r = runInfo.peek();
+  if (r && r.referenceTime.getTime() === ref.getTime()) return Promise.resolve(r);
+  const m = model.peek();
+  const key = `${m.id}|${ref.toISOString()}`;
+  let p = pastRuns.get(key);
+  if (!p) {
+    p = loadModelRun(m, ref.toISOString());
+    pastRuns.set(key, p);
+    p.catch(() => pastRuns.get(key) === p && pastRuns.delete(key));
+  }
+  return p;
+}
+
+/** Beh aktuálneho kroku (štítok, legenda) – pri histórii minulý beh */
+export const stepRun = signal<RunInfo | null>(null);
+effect(() => {
+  const s = currentStep.value;
+  if (!s) {
+    stepRun.value = null;
+    return;
+  }
+  const ref = s.ref.getTime();
+  resolveRun(s.ref)
+    .then((r) => {
+      if (currentStep.peek()?.ref.getTime() === ref) stepRun.value = r;
+    })
+    .catch(() => undefined);
+});
 
 effect(() => {
   void model.value;
@@ -230,15 +279,15 @@ effect(() => {
   runAbort?.abort();
   const ctrl = (runAbort = new AbortController());
   runError.value = null;
-  const p = untracked(() => loadRun(choice, ctrl.signal));
+  const p = untracked(() => loadModelRun(model.peek(), choice, ctrl.signal));
   p.then((r) => {
     if (ctrl.signal.aborted) return;
     batch(() => {
       runInfo.value = r;
-      // čas mimo behu → prvý krok; inak ponechať (timeIndex vyberie najbližší)
+      // čas za koncom behu alebo starší než história → teraz; inak ponechať (vyberie sa najbližší krok)
       const t = timeIso.value ? Date.parse(timeIso.value) : NaN;
-      const first = r.validTimes[0]!.getTime(), last = r.validTimes.at(-1)!.getTime();
-      if (Number.isNaN(t) || t < first || t > last) timeIso.value = r.validTimes[0]!.toISOString();
+      const last = r.validTimes.at(-1)!.getTime();
+      if (!Number.isNaN(t) && (t > last || t < Date.now() - 7 * 86_400_000)) timeIso.value = null;
     });
   }).catch((e: unknown) => {
     if (ctrl.signal.aborted) return;
@@ -248,7 +297,9 @@ effect(() => {
 
 effect(() => {
   const spatialId = model.value.sources[0]!;
-  listRuns(spatialId)
+  void runReload.value;
+  // 8 dní: S3 uchováva behy 7 dní, história siaha 7 dní dozadu
+  listRuns(spatialId, 8)
     .then((list) => {
       if (model.peek().sources[0] === spatialId) runs.value = list;
     })

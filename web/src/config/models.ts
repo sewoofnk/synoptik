@@ -19,6 +19,8 @@ export interface ModelDef {
   resolutionDeg: number;
   /** Globálne modely: čítať iba výrez Európy (chunky 32×32 → prenesie sa iba potrebná časť) */
   crop?: Bbox;
+  /** Krok časovej osi v histórii (natívny krok v krátkom predstihu), hodiny */
+  historyStepHours: number;
   /** Podporovaný vo výbere */
   enabled: boolean;
 }
@@ -27,13 +29,14 @@ export interface ModelDef {
 export const EUROPE_CROP: Bbox = [25, -35, 75, 65];
 
 export const MODELS: readonly ModelDef[] = [
-  { id: "icon_eu", label: "ICON-EU", sources: ["dwd_icon_eu"], provider: "DWD", resolutionDeg: 0.0625, enabled: true },
+  { id: "icon_eu", label: "ICON-EU", sources: ["dwd_icon_eu"], provider: "DWD", resolutionDeg: 0.0625, historyStepHours: 1, enabled: true },
   {
     id: "ecmwf_ifs025",
     label: "ECMWF IFS 0,25°",
     sources: ["ecmwf_ifs025"],
     provider: "ECMWF",
     resolutionDeg: 0.25,
+    historyStepHours: 3,
     crop: EUROPE_CROP,
     enabled: true,
   },
@@ -43,10 +46,11 @@ export const MODELS: readonly ModelDef[] = [
     sources: ["ncep_gfs025", "ncep_gfs013"],
     provider: "NOAA",
     resolutionDeg: 0.25,
+    historyStepHours: 1,
     crop: EUROPE_CROP,
     enabled: true,
   },
-  { id: "icon_d2", label: "ICON-D2", sources: ["dwd_icon_d2"], provider: "DWD", resolutionDeg: 0.02, enabled: false },
+  { id: "icon_d2", label: "ICON-D2", sources: ["dwd_icon_d2"], provider: "DWD", resolutionDeg: 0.02, historyStepHours: 1, enabled: false },
 ];
 
 export const DEFAULT_MODEL_ID = "icon_eu";

@@ -1,10 +1,13 @@
 import { ageHours, formatLead, formatRun, formatValidUtc } from "../lib/time";
-import { fieldStatus, layer, menuOpen, model, runChoice, runError, runInfo, validTime } from "../state/store";
+import { currentStep, fieldStatus, layer, menuOpen, model, runChoice, runError, runInfo, validTime } from "../state/store";
 
 // Štítok vľavo hore: vrstva, model, beh (init time) a platnosť – zadanie vyžaduje, aby boli vždy viditeľné.
 // Klik otvorí menu (výber modelu a behu).
 export function InfoChip() {
   const run = runInfo.value;
+  const step = currentStep.value;
+  // beh, z ktorého je zobrazený krok (v histórii minulý beh)
+  const ref = step?.ref ?? run?.referenceTime ?? null;
   const vt = validTime.value;
   const st = fieldStatus.value;
 
@@ -16,22 +19,23 @@ export function InfoChip() {
       </span>
       <span class="ic-line mono">
         {model.value.label}
-        {run ? (
+        {run && ref ? (
           <>
             {" · beh "}
-            <b>{formatRun(run.referenceTime)}</b>
+            <b>{formatRun(ref)}</b>
             <span class="muted">
               {" "}
-              ({ageHours(run.referenceTime)} h{runChoice.value ? ", zvolený" : ""})
+              ({ageHours(ref)} h{runChoice.value && !step?.history ? ", zvolený" : ""})
             </span>
+            {step?.history && <span class="hist-tag">história</span>}
           </>
         ) : (
           !runError.value && <span class="muted"> · načítavam…</span>
         )}
       </span>
-      {run && vt && (
+      {ref && vt && (
         <span class="ic-line mono">
-          {formatValidUtc(vt)} <span class="muted">{formatLead(vt, run.referenceTime)}</span>
+          {formatValidUtc(vt)} <span class="muted">{formatLead(vt, ref)}</span>
         </span>
       )}
       {runError.value && <span class="ic-line error">{runError.value}</span>}

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "preact/hooks";
 import { buildLut, COLOR_SCALES, scalePosition } from "../config/colorscales";
 import { fromSI, toSI, UNIT_OPTIONS, unitFor, unitLabel, type UnitSettings } from "../lib/units";
-import { layer, runInfo, timeIndex, units, validTime } from "../state/store";
+import { layer, stepRun, units, validTime } from "../state/store";
 
 /** "Pekné" čísla pre značky: krok 1/2/5 × 10^n, cca `count` značiek */
 export function niceTicks(min: number, max: number, count = 6): number[] {
@@ -32,7 +32,7 @@ export function Legend() {
   const l = layer.value;
   const scale = COLOR_SCALES[l.scale]!;
   const u = units.value;
-  const run = runInfo.value;
+  const run = stepRun.value;
   const vt = validTime.value;
 
   useEffect(() => {
@@ -59,8 +59,8 @@ export function Legend() {
   // dĺžka intervalu akumulácie = rozdiel od predchádzajúceho kroku
   let accum = "";
   if (l.accumulation && run && vt) {
-    const i = timeIndex.value;
-    const prev = i > 0 ? run.validTimes[i - 1]! : null;
+    // predchádzajúci krok toho istého behu (zrážky sú súčet od neho)
+    const prev = run.validTimes.filter((t) => t.getTime() < vt.getTime()).at(-1) ?? null;
     accum = prev ? `/${Math.round((vt.getTime() - prev.getTime()) / 3_600_000)} h` : "";
   }
   const q = l.quantity === "percent" ? null : l.quantity;

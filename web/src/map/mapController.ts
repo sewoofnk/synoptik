@@ -8,8 +8,10 @@ import { ISOBARS, overlaySources, sourceVariables, type FieldSource, type Level,
 import { loadField, loadSource, MissingVariableError, type Field } from "../data/fieldLoader";
 import { sampleBilinear } from "../data/grid";
 import type { RunInfo } from "../data/openMeteoSpatial";
+import type { Step } from "../data/timeline";
 import { formatValue, type UnitSettings } from "../lib/units";
 import {
+  currentStep,
   cursor,
   fieldStatus,
   layer,
@@ -18,8 +20,9 @@ import {
   playing,
   playSpeed,
   point,
-  runInfo,
+  resolveRun,
   setTimeIndex,
+  steps,
   timeIndex,
   units,
 } from "../state/store";
@@ -43,8 +46,10 @@ function isohypseInterval(l: Level): number {
   return l !== "sfc" && l < 500 ? 80 : 40;
 }
 
-/** Všetko, čo treba pre jeden časový krok pri aktuálnom výbere vrstiev */
-function loadStep(run: RunInfo, t: Date, l: ResolvedLayer, lv: Level, ov: string[]): Promise<unknown> {
+/** Všetko, čo treba pre jeden krok časovej osi (krok môže byť z minulého behu) */
+async function loadStep(step: Step, l: ResolvedLayer, lv: Level, ov: string[]): Promise<unknown> {
+  const run = await resolveRun(step.ref);
+  const t = step.t;
   const src = overlaySources(l, lv);
   const jobs: Promise<unknown>[] = [loadSource(run, t, l.source)];
   if (ov.includes("isobars")) jobs.push(loadOptional(run, t, src.isolines));
@@ -148,33 +153,31 @@ export class MapController {
   }
 
   private async syncField() {
-    const run = runInfo.value;
-    const i = timeIndex.value;
+    const step = currentStep.value;
     const l = layer.value;
-    if (!run || i < 0) return;
-    const t = run.validTimes[i]!;
-    const missing = sourceVariables(l.source).filter((v) => !run.variables.includes(v));
-    if (missing.length) {
-      this.currentField = null;
-      this.field.setField(null, COLOR_SCALES[l.scale]!);
-      fieldStatus.value = { loading: false, error: `Model nemá premennú ${missing.join(", ")}` };
-      return;
-    }
+    if (!step) return;
+    const stale = () => step !== currentStep.value || l !== layer.value;
     fieldStatus.value = { loading: true, error: null };
     try {
-      const f = await loadSource(run, t, l.source);
+      const run = await resolveRun(step.ref);
+      if (stale()) return;
+      const missing = sourceVariables(l.source).filter((v) => !run.variables.includes(v));
+      if (missing.length) {
+        this.clearField(l);
+        fieldStatus.value = { loading: false, error: `Model nemá premennú ${missing.join(", ")}` };
+        return;
+      }
+      const f = await loadSource(run, step.t, l.source);
       // medzitým sa výber zmenil → ignorovať
-      if (run !== runInfo.value || i !== timeIndex.value || l !== layer.value) return;
+      if (stale()) return;
       this.currentField = f;
       this.field.setField(f, COLOR_SCALES[l.scale]!);
       fieldStatus.value = { loading: false, error: null };
       this.updateCursor();
     } catch (e) {
-      if (run !== runInfo.value || i !== timeIndex.value || l !== layer.value) return;
+      if (stale()) return;
       // nikdy nenechať na mape staré pole pod novým časom
-      this.currentField = null;
-      this.field.setField(null, COLOR_SCALES[l.scale]!);
-      cursor.value = null;
+      this.clearField(l);
       fieldStatus.value =
         e instanceof MissingVariableError
           ? { loading: false, error: null, note: `${l.label}: v tomto kroku nie je` }
@@ -182,25 +185,30 @@ export class MapController {
     }
   }
 
+  private clearField(l: ResolvedLayer) {
+    this.currentField = null;
+    this.field.setField(null, COLOR_SCALES[l.scale]!);
+    cursor.value = null;
+  }
+
   private async syncParticles() {
-    const run = runInfo.value;
-    const i = timeIndex.value;
+    const step = currentStep.value;
     const lv = level.value;
     const on = overlays.value.includes("particles");
-    if (!on || !run || i < 0) {
+    if (!on || !step) {
       this.particles.setWind(null, null);
       return;
     }
-    const t = run.validTimes[i]!;
     const { u: uVar, v: vVar } = overlaySources(layer.value, lv).wind;
     // vo výške je vietor 3–5× silnejší → pomalšie častice, aby boli čitateľné
     this.particles.speedFactor = lv === "sfc" || lv >= 700 ? 0.12 : 0.05;
     try {
-      const [u, v] = await Promise.all([loadField(run, t, uVar), loadField(run, t, vVar)]);
-      if (run !== runInfo.value || i !== timeIndex.value || lv !== level.value || !overlays.value.includes("particles")) return;
+      const run = await resolveRun(step.ref);
+      const [u, v] = await Promise.all([loadField(run, step.t, uVar), loadField(run, step.t, vVar)]);
+      if (step !== currentStep.value || lv !== level.value || !overlays.value.includes("particles")) return;
       this.particles.setWind(u, v);
     } catch (e) {
-      if (run !== runInfo.value || i !== timeIndex.value) return;
+      if (step !== currentStep.value) return;
       this.particles.setWind(null, null);
       if (!(e instanceof MissingVariableError)) console.error("Častice:", e);
     }
@@ -208,15 +216,15 @@ export class MapController {
 
   /** Izobary (povrch), izohypsy (hladina) alebo vlastné izočiary vrstvy (relatívna topografia) */
   private async syncIsolines() {
-    const run = runInfo.value;
-    const i = timeIndex.value;
+    const step = currentStep.value;
     const l = layer.value;
     const lv = level.value;
     const u = units.peek();
-    if (!overlays.value.includes("isobars") || !run || i < 0) return this.isolines.update(null, u);
+    if (!overlays.value.includes("isobars") || !step) return this.isolines.update(null, u);
     try {
-      const field = await loadOptional(run, run.validTimes[i]!, overlaySources(l, lv).isolines);
-      if (run !== runInfo.value || i !== timeIndex.value || l !== layer.value || lv !== level.value) return;
+      const run = await resolveRun(step.ref);
+      const field = await loadOptional(run, step.t, overlaySources(l, lv).isolines);
+      if (step !== currentStep.value || l !== layer.value || lv !== level.value) return;
       if (!field) return this.isolines.update(null, u);
       let spec: ContourSpec;
       if (l.contours) {
@@ -233,29 +241,29 @@ export class MapController {
       }
       this.isolines.update(spec, units.peek());
     } catch (e) {
-      if (run !== runInfo.value || i !== timeIndex.value) return;
+      if (step !== currentStep.value) return;
       this.isolines.update(null, u);
       console.error("Izočiary:", e);
     }
   }
 
   private async syncIsotherms() {
-    const run = runInfo.value;
-    const i = timeIndex.value;
+    const step = currentStep.value;
     const lv = level.value;
     const l = layer.value;
     const u = units.peek();
-    if (!overlays.value.includes("isotherms") || !run || i < 0) return this.isotherms.update(null, u);
+    if (!overlays.value.includes("isotherms") || !step) return this.isotherms.update(null, u);
     try {
-      const field = await loadOptional(run, run.validTimes[i]!, overlaySources(l, lv).isotherms);
-      if (run !== runInfo.value || i !== timeIndex.value || lv !== level.value) return;
+      const run = await resolveRun(step.ref);
+      const field = await loadOptional(run, step.t, overlaySources(l, lv).isotherms);
+      if (step !== currentStep.value || lv !== level.value) return;
       if (!field) return this.isotherms.update(null, u);
       this.isotherms.update(
         { field, interval: 5, major: [273.15], label: (v, us) => formatValue("temperature", v, us, 0) },
         units.peek(),
       );
     } catch (e) {
-      if (run !== runInfo.value || i !== timeIndex.value) return;
+      if (step !== currentStep.value) return;
       this.isotherms.update(null, u);
       console.error("Izotermy:", e);
     }
@@ -270,22 +278,22 @@ export class MapController {
 
   /** Prednačítať nasledujúce kroky (a predošlý) súbežne, až keď je aktuálny hotový */
   private prefetch() {
-    const run = runInfo.value;
+    const all = steps.value;
     const i = timeIndex.value;
     const l = layer.value;
     const lv = level.value;
     const ov = overlays.value;
     const ahead = playing.value ? PREFETCH_AHEAD_PLAYING : PREFETCH_AHEAD;
-    if (!run || i < 0) return;
-    const n = run.validTimes.length;
+    if (i < 0) return;
+    const n = all.length;
     // pri prehrávaní sa za koncom pokračuje od začiatku
     const idx = Array.from({ length: ahead }, (_, k) => (playing.value ? (i + 1 + k) % n : i + 1 + k));
     if (!playing.value) idx.push(i - 1);
-    const steps = [...new Set(idx)].filter((k) => k >= 0 && k < n && k !== i);
-    void loadStep(run, run.validTimes[i]!, l, lv, ov)
+    const next = [...new Set(idx)].filter((k) => k >= 0 && k < n && k !== i);
+    void loadStep(all[i]!, l, lv, ov)
       .then(() => {
-        if (run !== runInfo.value) return;
-        return Promise.all(steps.map((k) => loadStep(run, run.validTimes[k]!, l, lv, ov).catch(() => undefined)));
+        if (all !== steps.value) return;
+        return Promise.all(next.map((k) => loadStep(all[k]!, l, lv, ov).catch(() => undefined)));
       })
       .catch(() => undefined);
   }
@@ -296,14 +304,14 @@ export class MapController {
     let stopped = false;
     const run = async () => {
       while (!stopped && playing.value) {
-        const r = runInfo.value;
-        if (!r) return;
-        const next = timeIndex.value + 1 >= r.validTimes.length ? 0 : timeIndex.value + 1;
+        const all = steps.value;
+        if (all.length === 0) return;
+        const next = timeIndex.value + 1 >= all.length ? 0 : timeIndex.value + 1;
         const started = performance.now();
-        await loadStep(r, r.validTimes[next]!, layer.value, level.value, overlays.value).catch(() => undefined);
+        await loadStep(all[next]!, layer.value, level.value, overlays.value).catch(() => undefined);
         const wait = 1000 / playSpeed.value - (performance.now() - started);
         if (wait > 0) await new Promise((res) => setTimeout(res, wait));
-        if (stopped || !playing.value || r !== runInfo.value) return;
+        if (stopped || !playing.value || all !== steps.value) return;
         setTimeIndex(next);
       }
     };

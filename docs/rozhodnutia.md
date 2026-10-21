@@ -4,6 +4,24 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-010 · 2026-10-21 · História na časovej osi (7 dní dozadu) a hranice štátov
+
+**Požiadavka vlastníka:** história ako vo Windy, napr. 7 dní dozadu a 10 dní dopredu.
+
+**Riešenie (`data/timeline.ts`, testy):**
+- Open-Meteo uchováva behy v `data_spatial` 7 dní (R-001). Zoznam behov sa číta z výpisu S3 za 8 dní.
+- **Minulosť sa skladá z minulých behov.** Pre čas *t* sa použije beh s najneskorším init time **pred** *t* (predstih +1 krok až po init time nasledujúceho behu: ICON-EU +1…+3 h, GFS +1…+6 h, ECMWF +3/+6 h). Krok +0 h sa v histórii nepoužije, lebo nemá zrážky ani nárazy (R-004). Chýbajúci beh pokryje predchádzajúci dlhším predstihom.
+- Je to **krátkodobá predpoveď, nie analýza ani pozorovanie.** Štítok vľavo hore preto pri každom kroku ukazuje beh, z ktorého krok pochádza, jeho vek a značku „história“. Predstih v štítku je počítaný od toho behu.
+- Krok osi v histórii: ICON-EU a GFS 1 h, ECMWF 3 h (`historyStepHours` v `models.ts`).
+- Metadáta minulého behu sa načítajú až pri prvom použití a cachujú sa v pamäti. Polia idú cez rovnakú cache blokov ako predpoveď.
+- **Dopredu** os siaha po koniec aktuálneho behu: GFS 16 dní, ECMWF 00/12Z 15 dní (06/18Z iba 6 dní), ICON-EU 5 dní. Behy rôznych modelov ani starších behov sa v budúcnosti nemiešajú.
+- Pri otvorení stránky je nastavený čas najbližší k „teraz“ (predtým prvý krok behu). Na osi je šrafovaná história, červená značka „teraz“ a tlačidlo **Teraz**. Pri dlhej osi sa popisky dní riedia.
+- Overené v prehliadači pre ICON-EU, ECMWF a GFS: skok na začiatok osi (14.10.) načíta pole z behu 14.10., bez chýb.
+
+**Hranice štátov (požiadavka vlastníka):** v menu sa dá zvoliť farba hraníc (podľa mapy, čierna, biela, červená, žltá, purpurová, tyrkysová), hrúbka (tenké/stredné/hrubé) a voliteľne aj hranice krajov/regiónov. Mení sa iba vzhľad vrstiev podkladu OpenFreeMap (`boundary_2`/`boundary_country_*`, regióny `boundary_3`/`boundary_state`), pôvodné hodnoty sa po zmene štýlu znova zapamätajú. Nastavenie je v localStorage.
+
+---
+
 ## R-009 · 2026-10-21 · Fáza 3: tlakové hladiny, ECMWF a GFS na mape
 
 **Overené** v `data_spatial/<model>/latest.json` a malým testom v Node (čítanie výrezu a porovnanie s Forecast API v 3 bodoch, rozdiely ≤ 0,05):
