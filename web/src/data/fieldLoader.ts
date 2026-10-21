@@ -6,7 +6,7 @@ import { BrowserBlockCache, LruBlockCache, OmDataType, OmHttpBackendPool, type B
 import type { FieldSource } from "../config/layers.config";
 import { Lcc, reprojectLcc } from "../lib/lcc";
 import { dewpointFromRH } from "../lib/thermo";
-import { cropRanges, gridFromBbox, type Grid } from "./grid";
+import { cropRanges, gridFromBbox, sampleBilinear, type Grid } from "./grid";
 import { partFor, stepUrl, type RunInfo } from "./openMeteoSpatial";
 
 /** Premenná v danom kroku nie je (napr. zrážky a nárazy v kroku +0 h – sú to hodnoty za interval) */
@@ -159,6 +159,27 @@ export function loadField(run: RunInfo, validTime: Date, variable: string): Prom
   return cached(key) ?? remember(key, readVariable(run, validTime, variable));
 }
 
+const sameGrid = (a: Grid, b: Grid) =>
+  a.nx === b.nx && a.ny === b.ny && a.lat0 === b.lat0 && a.lon0 === b.lon0 && a.dlat === b.dlat && a.dlon === b.dlon;
+
+/**
+ * Polia na spoločnej mriežke. Pri rôznych mriežkach (GFS: 10 m v 0,117°, hladiny v 0,25°)
+ * sa jemnejšie bilineárne prevzorkujú na najhrubšiu.
+ */
+export function align(fs: Field[]): { grid: Grid; arrays: Float32Array[] } {
+  const target = fs.reduce((g, f) => (f.grid.dlat > g.dlat ? f.grid : g), fs[0]!.grid);
+  const arrays = fs.map((f) => {
+    if (sameGrid(f.grid, target)) return f.data;
+    const out = new Float32Array(target.nx * target.ny);
+    for (let y = 0; y < target.ny; y++) {
+      const lat = target.lat0 + y * target.dlat;
+      for (let x = 0; x < target.nx; x++) out[y * target.nx + x] = sampleBilinear(f.grid, f.data, lat, target.lon0 + x * target.dlon);
+    }
+    return out;
+  });
+  return { grid: target, arrays };
+}
+
 /** Odvodené pole z dvoch premenných (bunka po bunke), cachované pod vlastným kľúčom */
 function derived(
   run: RunInfo,
@@ -173,12 +194,13 @@ function derived(
     cached(key) ??
     remember(
       key,
-      Promise.all([loadField(run, validTime, a), loadField(run, validTime, b)]).then(([fa, fb]) => {
-        if (fa.data.length !== fb.data.length) throw new Error(`${a} a ${b} majú rôzne mriežky`);
-        const data = new Float32Array(fa.data.length);
-        for (let i = 0; i < data.length; i++) data[i] = f(fa.data[i]!, fb.data[i]!);
+      Promise.all([loadField(run, validTime, a), loadField(run, validTime, b)]).then((fs) => {
+        const { grid, arrays } = align(fs);
+        const [da, db] = arrays as [Float32Array, Float32Array];
+        const data = new Float32Array(da.length);
+        for (let i = 0; i < data.length; i++) data[i] = f(da[i]!, db[i]!);
         const [min, max] = minMax(data);
-        return { variable: name, grid: fa.grid, data, min, max };
+        return { variable: name, grid, data, min, max };
       }),
     )
   );
@@ -202,5 +224,32 @@ export function loadSource(run: RunInfo, validTime: Date, src: FieldSource): Pro
       return derived(run, validTime, `dewpoint(${src.t})`, src.t, src.rh, dewpointFromRH);
     case "diff":
       return derived(run, validTime, `diff(${src.a},${src.b})`, src.a, src.b, (x, y) => x - y);
+    case "vdiff":
+      return derived2(run, validTime, `vdiff(${src.u1},${src.u2})`, [src.u1, src.v1, src.u2, src.v2], ([u1, v1, u2, v2]) =>
+        Math.hypot(u1! - u2!, v1! - v2!),
+      );
   }
+}
+
+/** Odvodené pole zo štyroch premenných (strih vetra) */
+function derived2(run: RunInfo, validTime: Date, name: string, vars: string[], f: (x: number[]) => number): Promise<Field> {
+  const key = fieldKey(run, validTime, name);
+  return (
+    cached(key) ??
+    remember(
+      key,
+      Promise.all(vars.map((v) => loadField(run, validTime, v))).then((fs) => {
+        const { grid, arrays } = align(fs);
+        const n = arrays[0]!.length;
+        const data = new Float32Array(n);
+        const buf = new Array<number>(arrays.length);
+        for (let i = 0; i < n; i++) {
+          for (let k = 0; k < arrays.length; k++) buf[k] = arrays[k]![i]!;
+          data[i] = f(buf);
+        }
+        const [min, max] = minMax(data);
+        return { variable: name, grid, data, min, max };
+      }),
+    )
+  );
 }

@@ -20,6 +20,7 @@ const PATHS = {
   particles: "M3 7h5M12 7h9M2 12h3M9 12h8M4 17h9M17 17h3",
   ruler: "M3 17 17 3l4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2",
   info: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01",
+  bolt: "M13 2 3 14h9l-1 8 10-12h-9l1-8z",
   play: "M7 4v16l13-8z",
   pause: "M6 4h4v16H6zM14 4h4v16h-4z",
   prev: "M15 18l-6-6 6-6",

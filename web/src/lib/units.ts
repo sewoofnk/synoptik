@@ -1,7 +1,18 @@
 // Jednotky. Interne je všetko v SI (K, m/s, Pa, m, mm = kg/m², %),
 // konverzia prebieha iba pri zobrazení.
 
-export type Quantity = "temperature" | "speed" | "pressure" | "height" | "precipitation" | "distance" | "percent";
+export type Quantity =
+  | "temperature"
+  /** Rozdiel teplôt (Lifted Index): °C = K, °F = ×1,8 bez posunu */
+  | "tempDiff"
+  | "speed"
+  | "pressure"
+  | "height"
+  | "precipitation"
+  | "distance"
+  | "percent"
+  /** Špecifická energia (CAPE, CIN), vždy J/kg */
+  | "energy";
 
 export type TemperatureUnit = "C" | "F" | "K";
 export type SpeedUnit = "ms" | "kmh" | "kt" | "mph" | "bft";
@@ -42,6 +53,10 @@ const LABELS: Record<string, string> = {
   mm: "mm", in: "in",
   km: "km", nm: "NM", mi: "mi",
   pct: "%",
+  jkg: "J/kg",
+  dC: "°C",
+  dF: "°F",
+  dK: "K",
 };
 
 const KT = 1852 / 3600;
@@ -59,7 +74,10 @@ export function beaufort(ms: number): number {
 
 /** Jednotka, ktorá platí pre danú veličinu pri aktuálnom nastavení */
 export function unitFor(q: Quantity, s: UnitSettings): string {
-  return q === "percent" ? "pct" : s[q];
+  if (q === "percent") return "pct";
+  if (q === "energy") return "jkg";
+  if (q === "tempDiff") return `d${s.temperature}`;
+  return s[q];
 }
 
 export function unitLabel(q: Quantity, s: UnitSettings): string {
@@ -87,7 +105,10 @@ export function fromSI(q: Quantity, v: number, unit: string): number {
       return unit === "in" ? v / 25.4 : v;
     case "distance":
       return unit === "nm" ? v / 1852 : unit === "mi" ? v / 1609.344 : v / 1000;
+    case "tempDiff":
+      return unit === "dF" ? v * 1.8 : v;
     case "percent":
+    case "energy":
       return v;
   }
 }
@@ -113,7 +134,10 @@ export function toSI(q: Quantity, v: number, unit: string): number {
       return unit === "in" ? v * 25.4 : v;
     case "distance":
       return unit === "nm" ? v * 1852 : unit === "mi" ? v * 1609.344 : v * 1000;
+    case "tempDiff":
+      return unit === "dF" ? v / 1.8 : v;
     case "percent":
+    case "energy":
       return v;
   }
 }
@@ -126,6 +150,10 @@ const DECIMALS: Record<string, number> = {
   mm: 1, in: 2,
   km: 0, nm: 0, mi: 0,
   pct: 0,
+  jkg: 0,
+  dC: 1,
+  dF: 1,
+  dK: 1,
 };
 
 /** Číslo v zobrazovacej jednotke (bez značky jednotky) */

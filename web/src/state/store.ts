@@ -90,7 +90,7 @@ export const menuOpen = signal(false);
 
 /** Bod vybraný klikom na mapu (pravý panel) */
 export const point = signal<{ lat: number; lon: number } | null>(null);
-export type PointTab = "meteogram" | "skewt" | "compare";
+export type PointTab = "meteogram" | "skewt" | "compare" | "ensemble";
 export const pointTab = signal<PointTab>("meteogram");
 /** Model pre meteogram a Skew-T; predvolene podľa mapového modelu */
 export const pointModelId = signal(pointModelForMap(init.model));

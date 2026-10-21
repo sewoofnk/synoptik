@@ -115,20 +115,23 @@ export interface ModelRunInfo {
 const runCache = new Map<string, { at: number; promise: Promise<ModelRunInfo> }>();
 
 /** Beh (init time) modelu z meta.json – zadanie vyžaduje zobraziť ho pri každom výstupe */
-export function fetchModelRun(metaId: string): Promise<ModelRunInfo> {
-  const hit = runCache.get(metaId);
+export const ENSEMBLE_META = "https://ensemble-api.open-meteo.com/data";
+
+export function fetchModelRun(metaId: string, base = META): Promise<ModelRunInfo> {
+  const key = `${base}/${metaId}`;
+  const hit = runCache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.promise;
-  const promise = fetch(`${META}/${metaId}/static/meta.json`)
+  const promise = fetch(`${base}/${metaId}/static/meta.json`)
     .then(async (res) => {
       if (!res.ok) throw new Error(`meta.json: HTTP ${res.status}`);
       const j = (await res.json()) as { last_run_initialisation_time: number; last_run_availability_time: number };
       return { init: new Date(j.last_run_initialisation_time * 1000), available: new Date(j.last_run_availability_time * 1000) };
     })
     .catch((e: unknown) => {
-      runCache.delete(metaId);
+      runCache.delete(key);
       throw e;
     });
-  runCache.set(metaId, { at: Date.now(), promise });
+  runCache.set(key, { at: Date.now(), promise });
   return promise;
 }
 

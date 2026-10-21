@@ -649,6 +649,21 @@ select {
 
 .compare-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 .model-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 2px 8px; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.run-line { margin: 0; font-size: 12px; }
+.threshold { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; font-size: 12px; }
+.threshold input {
+  width: 80px;
+  min-height: 34px;
+  padding: 4px 8px;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.segmented.small { margin: 0; }
+.segmented.small button { min-height: 32px; min-width: 36px; flex: none; }
 .swatch { display: inline-block; width: 12px; height: 3px; border-radius: 2px; }
 
 /* Skew-T */

@@ -1,5 +1,6 @@
 import { useRef } from "preact/hooks";
 import { getPointModel, POINT_MODELS } from "../config/pointModels";
+import { Ensemble } from "../charts/Ensemble";
 import { Meteogram } from "../charts/Meteogram";
 import { ModelCompare } from "../charts/ModelCompare";
 import { SkewT } from "../charts/SkewT";
@@ -15,6 +16,7 @@ const TABS: { id: PointTab; label: string }[] = [
   { id: "meteogram", label: "Meteogram" },
   { id: "skewt", label: "Skew-T" },
   { id: "compare", label: "Modely" },
+  { id: "ensemble", label: "Ensemble" },
 ];
 
 function coord(v: number, pos: string, neg: string): string {
@@ -67,7 +69,7 @@ export function PointPanel() {
           <b>
             {coord(p.lat, "N", "S")} {coord(p.lon, "E", "W")}
           </b>
-          {tab !== "compare" && <RunLine modelId={modelId} />}
+          {tab !== "compare" && tab !== "ensemble" && <RunLine modelId={modelId} />}
         </div>
         <button class="icon-btn" onClick={() => (point.value = null)} aria-label="Zavrieť (Esc)" title="Zavrieť (Esc)">
           <Icon name="close" />
@@ -79,7 +81,7 @@ export function PointPanel() {
             {t.label}
           </button>
         ))}
-        {tab !== "compare" && (
+        {tab !== "compare" && tab !== "ensemble" && (
           <select class="tab-model" value={modelId} onChange={(e) => (pointModelId.value = e.currentTarget.value)} aria-label="Model">
             {POINT_MODELS.map((m) => (
               <option key={m.id} value={m.id}>
@@ -93,6 +95,7 @@ export function PointPanel() {
         {tab === "meteogram" && <Meteogram lat={p.lat} lon={p.lon} modelId={modelId} />}
         {tab === "skewt" && <SkewT lat={p.lat} lon={p.lon} modelId={modelId} />}
         {tab === "compare" && <ModelCompare lat={p.lat} lon={p.lon} />}
+        {tab === "ensemble" && <Ensemble lat={p.lat} lon={p.lon} />}
       </div>
     </section>
   );

@@ -33,7 +33,9 @@ export type FieldSource =
   /** Rosný bod z teploty a relatívnej vlhkosti */
   | { kind: "dewpoint"; t: string; rh: string }
   /** Rozdiel a − b (relatívna topografia) */
-  | { kind: "diff"; a: string; b: string };
+  | { kind: "diff"; a: string; b: string }
+  /** Veľkosť rozdielu vektorov (u1,v1) − (u2,v2) – strih vetra */
+  | { kind: "vdiff"; u1: string; v1: string; u2: string; v2: string };
 
 interface Variant {
   source: FieldSource;
@@ -219,6 +221,62 @@ export const LAYERS: readonly LayerDef[] = [
     short: "RT 500/1000",
     overlays: { isobars: true },
   },
+  {
+    id: "cape",
+    label: "CAPE",
+    category: "convection",
+    quantity: "energy",
+    surface: { source: sc("cape"), scale: "cape" },
+    levelIndependent: true,
+    icon: "bolt",
+  },
+  {
+    id: "convective_inhibition",
+    label: "CIN",
+    category: "convection",
+    quantity: "energy",
+    surface: { source: sc("convective_inhibition"), scale: "cin" },
+    levelIndependent: true,
+    icon: "bolt",
+    badge: "−",
+  },
+  {
+    id: "lifted_index",
+    label: "Lifted Index",
+    category: "convection",
+    quantity: "tempDiff",
+    surface: { source: sc("lifted_index"), scale: "lifted_index" },
+    levelIndependent: true,
+    icon: "bolt",
+    badge: "LI",
+  },
+  {
+    id: "shear_0_6km",
+    label: "Strih vetra 0–6 km",
+    category: "convection",
+    quantity: "speed",
+    // aproximácia: vietor v 500 hPa (~5,5 km) mínus vietor 10 m (R-012)
+    surface: {
+      source: { kind: "vdiff", u1: "wind_u_component_500hPa", v1: "wind_v_component_500hPa", u2: "wind_u_component_10m", v2: "wind_v_component_10m" },
+      scale: "shear",
+      label: "Strih vetra 0–6 km (500 hPa − 10 m)",
+    },
+    levelIndependent: true,
+    icon: "wind",
+    badge: "Δ",
+    short: "Strih",
+  },
+  {
+    id: "freezing_level_height",
+    label: "Nulová izoterma",
+    category: "other",
+    quantity: "height",
+    surface: { source: sc("freezing_level_height"), scale: "freezing_level" },
+    levelIndependent: true,
+    icon: "thermometer",
+    badge: "0°",
+    short: "Nulová izot.",
+  },
 ];
 
 /** Prekrytia kombinovateľné s ľubovoľnou farebnou vrstvou */
@@ -264,6 +322,8 @@ export function sourceVariables(src: FieldSource): string[] {
       return [src.t, src.rh];
     case "diff":
       return [src.a, src.b];
+    case "vdiff":
+      return [src.u1, src.v1, src.u2, src.v2];
   }
 }
 
@@ -278,6 +338,8 @@ function withLevel(src: FieldSource, l: number): FieldSource {
       return { kind: "dewpoint", t: r(src.t), rh: r(src.rh) };
     case "diff":
       return { kind: "diff", a: r(src.a), b: r(src.b) };
+    case "vdiff":
+      return { kind: "vdiff", u1: r(src.u1), v1: r(src.v1), u2: r(src.u2), v2: r(src.v2) };
   }
 }
 

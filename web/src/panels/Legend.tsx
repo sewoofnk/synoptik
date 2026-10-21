@@ -63,7 +63,9 @@ export function Legend() {
     const prev = run.validTimes.filter((t) => t.getTime() < vt.getTime()).at(-1) ?? null;
     accum = prev ? `/${Math.round((vt.getTime() - prev.getTime()) / 3_600_000)} h` : "";
   }
-  const q = l.quantity === "percent" ? null : l.quantity;
+  // prepínateľná jednotka (percentá a J/kg nemajú inú; rozdiel teplôt sa riadi jednotkou teploty)
+  const q: keyof typeof UNIT_OPTIONS | null =
+    l.quantity === "tempDiff" ? "temperature" : l.quantity in UNIT_OPTIONS ? (l.quantity as keyof typeof UNIT_OPTIONS) : null;
 
   return (
     <div class="legend glass" title={`${l.label} [${unitLabel(l.quantity, u)}]`}>

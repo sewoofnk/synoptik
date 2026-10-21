@@ -197,6 +197,97 @@ Object.assign(COLOR_SCALES, {
   thickness: heightScale("thickness", 4950, 5850),
 } satisfies Record<string, ColorScale>);
 
+// --- Konvekcia ----------------------------------------------------------------
+
+Object.assign(COLOR_SCALES, {
+  // CAPE (J/kg): pod 100 priehľadné, od 1000 výrazné, 3000+ extrémne
+  cape: {
+    id: "cape",
+    min: 0,
+    max: 4000,
+    transform: "linear",
+    stops: [
+      [0, "#00000000"],
+      [50, "#00000000"],
+      [100, "#a8e6a3b0"],
+      [300, "#e8ee6fd0"],
+      [700, "#f9c74f"],
+      [1200, "#f3722c"],
+      [2000, "#d62828"],
+      [3000, "#9d0b6b"],
+      [4000, "#5a189a"],
+    ],
+  },
+  // CIN (J/kg, kladná veľkosť): silnejšia inhibícia tmavšia modrá
+  cin: {
+    id: "cin",
+    min: 0,
+    max: 400,
+    transform: "linear",
+    stops: [
+      [0, "#00000000"],
+      [10, "#00000000"],
+      [25, "#c6dbefb0"],
+      [50, "#9ecae1d0"],
+      [100, "#6baed6"],
+      [200, "#3182bd"],
+      [400, "#08306b"],
+    ],
+  },
+  // Lifted Index (K): záporný = labilita (teplé farby), kladný = stabilita (studené, tlmené)
+  lifted_index: {
+    id: "lifted_index",
+    min: -10,
+    max: 15,
+    transform: "linear",
+    stops: [
+      [-10, "#4a0d67"],
+      [-7, "#a4133c"],
+      [-4, "#e85d04"],
+      [-2, "#f48c06"],
+      [0, "#ffd166"],
+      [2, "#e9f5db"],
+      [6, "#b7d7e8"],
+      [15, "#8da9c4"],
+    ],
+  },
+  // Strih vetra 0–6 km (m/s): 10 slabý, 20 organizované búrky, 30+ supercely
+  shear: {
+    id: "shear",
+    min: 0,
+    max: 45,
+    transform: "linear",
+    stops: [
+      [0, "#00000000"],
+      [5, "#e5f5e0a0"],
+      [10, "#a1d99b"],
+      [15, "#ffe08a"],
+      [20, "#fdae61"],
+      [25, "#f46d43"],
+      [30, "#d73027"],
+      [45, "#67001f"],
+    ],
+  },
+  // Výška nulovej izotermy (m n. m.)
+  freezing_level: {
+    id: "freezing_level",
+    min: 0,
+    max: 5000,
+    transform: "linear",
+    stops: [
+      [0, "#5e3c99"],
+      [500, "#3f6fd1"],
+      [1000, "#4fb3d9"],
+      [1500, "#7fd3a2"],
+      [2000, "#d9ef8b"],
+      [2500, "#fee08b"],
+      [3000, "#fdae61"],
+      [4000, "#f46d43"],
+      [5000, "#d73027"],
+    ],
+  },
+} satisfies Record<string, ColorScale>);
+
 // Hladiny 850 a 700 hPa používajú prízemné škály, vyššie hladiny „výškové“
 for (const l of [850, 700]) {
   COLOR_SCALES[`temperature_${l}`] = COLOR_SCALES.temperature!;

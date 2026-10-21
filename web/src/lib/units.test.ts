@@ -75,3 +75,17 @@ describe("units – formátovanie", () => {
     expect(isUnitSettings(null)).toBe(false);
   });
 });
+
+describe("konvekčné veličiny", () => {
+  it("Lifted Index: rozdiel teplôt bez posunu nuly", async () => {
+    const { format, PRESETS } = await import("./units");
+    const f = { ...PRESETS.metric, preset: "custom" as const, temperature: "F" as const };
+    expect(format("tempDiff", -4, PRESETS.metric)).toBe("-4.0 °C");
+    expect(format("tempDiff", -4, f)).toBe("-7.2 °F");
+  });
+
+  it("CAPE vždy v J/kg", async () => {
+    const { format, PRESETS } = await import("./units");
+    expect(format("energy", 1234.4, PRESETS.aviation)).toBe("1234 J/kg");
+  });
+});

@@ -59,3 +59,16 @@ describe("prekrytia a dostupnosť", () => {
     expect(isLayerAvailable(L("temperature"), "sfc", undefined)).toBe(true);
   });
 });
+
+describe("konvekcia", () => {
+  it("strih vetra potrebuje vietor 500 hPa a 10 m, nezávisí od hladiny", () => {
+    const r = resolveLayer(L("shear_0_6km"), 850);
+    expect(sourceVariables(r.source)).toEqual(["wind_u_component_500hPa", "wind_v_component_500hPa", "wind_u_component_10m", "wind_v_component_10m"]);
+    expect(r.label).toBe("Strih vetra 0–6 km (500 hPa − 10 m)");
+  });
+
+  it("Lifted Index iba pri modeli, ktorý ho má (GFS)", () => {
+    expect(isLayerAvailable(L("lifted_index"), "sfc", ["cape", "lifted_index"])).toBe(true);
+    expect(isLayerAvailable(L("lifted_index"), "sfc", ["cape"])).toBe(false);
+  });
+});

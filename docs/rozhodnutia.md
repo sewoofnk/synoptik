@@ -4,6 +4,33 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-012 · 2026-10-21 · Fáza 4: konvekcia a ensemble
+
+**Konvekčné vrstvy – dostupnosť** (overené v `data_spatial` a Forecast API):
+
+| Vrstva | ICON-EU | ECMWF IFS | GFS | ALADIN |
+|---|---|---|---|---|
+| CAPE | ✓ | ✓ | ✓ | ✓ |
+| CIN (`convective_inhibition`, kladná veľkosť J/kg) | ✓ | – | ✓ | – |
+| Lifted Index | – | – | ✓ | – |
+| Nulová izoterma (`freezing_level_height`) | ✓ | – | ✓ | – |
+| Strih vetra 0–6 km (odvodený) | ✓ | ✓ | ✓ | ✓ |
+
+- Vrstva, ktorú model nemá, je v menu sivá (rovnako ako nárazy pri ECMWF). Odvodzovanie LI a nulovej izotermy z hladín zatiaľ nerobíme: chýba tlak pri zemi v `data_spatial` a výpočet by znamenal ~16 polí na krok.
+- **Strih vetra 0–6 km** je aproximovaný ako |V(500 hPa) − V(10 m)|. 500 hPa je približne 5,5 km n. m., na horách menej nad terénom. Štítok to uvádza („500 hPa − 10 m“).
+- Odvodené polia z rôznych mriežok (GFS: 10 m v 0,117°, hladiny v 0,25°) sa zarovnajú na hrubšiu mriežku bilineárne (`align` vo `fieldLoader.ts`).
+- Nové veličiny v `units.ts`: `energy` (J/kg, bez prevodu) a `tempDiff` (Lifted Index: °C = K, °F = ×1,8 bez posunu nuly).
+- Overenie v prehliadači (zajtra 12 UTC): GFS CAPE 0/0, GFS LI 6,6/6,6 °C, ICON-EU CIN 0/0. ICON-EU nulová izoterma 2555 m v aplikácii a 2610 m v API, čo je interpolácia v horách (susedné bunky 2610, 2480, 2120 m).
+
+**Ensemble** (`data/ensemble.ts`, záložka Ensemble v bodovom paneli):
+- Open-Meteo Ensemble API `ensemble-api.open-meteo.com/v1/ensemble` (CORS *). Kontrolný beh je premenná bez prípony, členy majú príponu `_memberNN`.
+- Modely: ECMWF ENS 0,25° (`ecmwf_ifs025`, 50 + kontrolný, 15 dní), ICON EPS (`icon_seamless`, 39 + 1, EU 5 dní a potom global), GEFS 0,25° (`gfs025`, 30 + 1), ECMWF AIFS ENS (`ecmwf_aifs025`). Zobrazuje sa 10 dní.
+- **Beh** z `ensemble-api.open-meteo.com/data/<id>/static/meta.json`: `ecmwf_ifs025_ensemble`, `ncep_gefs025`, `ecmwf_aifs025_ensemble`. Pre ICON **`dwd_icon_eu_eps_native`** (`dwd_icon_eps` má zastaraný meta.json zo 6.10.).
+- Veličiny: T 2 m, zrážky, nárazy, vietor 10 m, T 850 hPa, MSLP, CAPE a oblačnosť (iba tie, ktoré model má).
+- Graf: členy ako tenké sivé čiary, medián, 10. a 90. percentil s pásmom, kontrolný beh. Pod tým pravdepodobnosť (%) prekročenia alebo nedosiahnutia prahu v aktuálnych jednotkách. Kvantily sa počítajú lineárnou interpoláciou (ako numpy), testy sú so známymi hodnotami.
+
+---
+
 ## R-011 · 2026-10-21 · ALADIN CE 2 km (ČHMÚ) – detail pre Slovensko
 
 **Dôvod:** záujmová oblasť vlastníka je Slovensko, najmä východ. ICON-D2 končí na 20,34° E (R-009), ALADIN CE pokrýva celé Slovensko.
