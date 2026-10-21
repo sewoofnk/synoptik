@@ -1,9 +1,11 @@
 import { COLOR_SCALES, cssGradient } from "../config/colorscales";
-import { CATEGORY_LABELS, LAYERS, OVERLAYS, sourceVariables, type LayerCategory } from "../config/layers.config";
+import { CATEGORY_LABELS, isLayerAvailable, LAYERS, OVERLAYS, overlayVariables, previewScale, type LayerCategory } from "../config/layers.config";
 import { MODELS } from "../config/models";
 import { formatRun } from "../lib/time";
 import {
+  layer,
   layerId,
+  level,
   menuOpen,
   modelId,
   overlays,
@@ -12,6 +14,7 @@ import {
   runInfo,
   runs,
   selectLayer,
+  selectModel,
   toggleOverlay,
 } from "../state/store";
 import { Icon } from "./icons";
@@ -48,8 +51,8 @@ export function MainMenu() {
                   key={m.id}
                   class={`chip ${modelId.value === m.id ? "active" : ""}`}
                   disabled={!m.enabled}
-                  onClick={() => (modelId.value = m.id)}
-                  title={m.enabled ? m.label : `${m.label} – pribudne vo Fáze 3`}
+                  onClick={() => selectModel(m.id)}
+                  title={m.enabled ? m.label : `${m.label} – pribudne neskôr`}
                 >
                   {m.label}
                 </button>
@@ -73,7 +76,7 @@ export function MainMenu() {
               <h3>{CATEGORY_LABELS[c]}</h3>
               <div class="tiles">
                 {LAYERS.filter((l) => l.category === c).map((l) => {
-                  const ok = available(sourceVariables(l.source));
+                  const ok = isLayerAvailable(l, level.value, vars);
                   const active = layerId.value === l.id;
                   return (
                     <button
@@ -86,7 +89,7 @@ export function MainMenu() {
                       }}
                       title={ok ? l.label : `${l.label} – model túto premennú nemá`}
                     >
-                      <span class="tile-img" style={{ background: cssGradient(COLOR_SCALES[l.scale]!) }}>
+                      <span class="tile-img" style={{ background: cssGradient(COLOR_SCALES[previewScale(l)]!) }}>
                         <Icon name={l.icon} size={26} badge={l.badge} />
                       </span>
                       <span class="tile-label">{l.label}</span>
@@ -100,7 +103,7 @@ export function MainMenu() {
           <section>
             <h3>Zobraziť na mape</h3>
             {OVERLAYS.map((o) => (
-              <label key={o.id} class={`switch-row ${available(o.variables) ? "" : "disabled"}`}>
+              <label key={o.id} class={`switch-row ${available(overlayVariables(o.id, layer.value, level.value)) ? "" : "disabled"}`}>
                 <Icon name={o.icon} />
                 <span>{o.label}</span>
                 <input
@@ -108,7 +111,7 @@ export function MainMenu() {
                   role="switch"
                   class="switch"
                   checked={overlays.value.includes(o.id)}
-                  disabled={!available(o.variables)}
+                  disabled={!available(overlayVariables(o.id, layer.value, level.value))}
                   onChange={(e) => toggleOverlay(o.id, e.currentTarget.checked)}
                 />
               </label>
@@ -137,7 +140,7 @@ export function MainMenu() {
               <b>Nie je certifikovaný zdroj leteckých informácií.</b> Na let používajte oficiálny brífing.
             </p>
             <p class="muted">
-              Klávesy: ← → čas · medzerník prehrať · M model · Esc zavrieť. Klik na mapu otvorí meteogram, Skew-T a porovnanie modelov.
+              Klávesy: ← → čas · [ ] hladina · medzerník prehrať · M model · Esc zavrieť. Klik na mapu otvorí meteogram, Skew-T a porovnanie modelov.
             </p>
             <p class="muted">
               Dáta: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0), modely DWD (ICON),

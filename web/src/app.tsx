@@ -7,9 +7,9 @@ import { InfoChip } from "./panels/InfoChip";
 import { MainMenu } from "./panels/MainMenu";
 import { PointPanel } from "./panels/PointPanel";
 import { QuickLayers } from "./panels/QuickLayers";
-import { menuOpen, modelId, playing, point, refreshRun, stepTime } from "./state/store";
+import { menuOpen, modelId, playing, point, refreshRun, selectModel, stepLevel, stepTime } from "./state/store";
 
-/** Klávesové skratky: ←/→ čas, medzerník play, M model, [ ] hladina (od Fázy 3) */
+/** Klávesové skratky: ←/→ čas, medzerník play, M model, [ ] hladina */
 function onKey(e: KeyboardEvent) {
   const t = e.target instanceof Element ? e.target : null;
   // formulárové prvky majú vlastné ovládanie klávesmi; medzerník na tlačidle ho stlačí
@@ -22,6 +22,12 @@ function onKey(e: KeyboardEvent) {
     case "ArrowRight":
       stepTime(1);
       break;
+    case "[":
+      stepLevel(-1);
+      break;
+    case "]":
+      stepLevel(1);
+      break;
     case "Escape":
       if (menuOpen.value) menuOpen.value = false;
       else point.value = null;
@@ -33,7 +39,7 @@ function onKey(e: KeyboardEvent) {
     case "M": {
       const enabled = MODELS.filter((m) => m.enabled);
       const i = enabled.findIndex((m) => m.id === modelId.value);
-      modelId.value = enabled[(i + 1) % enabled.length]!.id;
+      selectModel(enabled[(i + 1) % enabled.length]!.id);
       break;
     }
     default:

@@ -1,8 +1,8 @@
 import { useState } from "preact/hooks";
-import { OVERLAYS } from "../config/layers.config";
+import { LEVEL_FL, LEVELS, levelLabel, OVERLAYS, overlayVariables } from "../config/layers.config";
 import { MODELS } from "../config/models";
 import { flyTo, zoomBy } from "../map/mapInstance";
-import { modelId, overlays, point, runInfo, toggleOverlay } from "../state/store";
+import { layer, level, modelId, overlays, point, runInfo, selectLevel, selectModel, toggleOverlay } from "../state/store";
 import { Footer } from "./Footer";
 import { Icon } from "./icons";
 import { Legend } from "./Legend";
@@ -15,7 +15,7 @@ function OverlayToggles() {
   return (
     <div class="toggles">
       {OVERLAYS.map((o) => {
-        const ok = !vars || o.variables.every((v) => vars.includes(v));
+        const ok = !vars || overlayVariables(o.id, layer.value, level.value).every((v) => vars.includes(v));
         const on = overlays.value.includes(o.id);
         return (
           <button
@@ -66,6 +66,27 @@ function MapButtons() {
   );
 }
 
+/** Výber hladiny (ako „Výška“ vo Windy); klávesy [ ] */
+function LevelPills() {
+  return (
+    <div class="model-pills level-pills glass" role="radiogroup" aria-label="Hladina">
+      {LEVELS.map((l) => (
+        <button
+          key={l}
+          role="radio"
+          aria-checked={level.value === l}
+          class={level.value === l ? "active" : ""}
+          onClick={() => selectLevel(l)}
+          title={l === "sfc" ? "Povrch: 2 m / 10 m / MSL ( [ ] mení hladinu)" : `${l} hPa ≈ ${LEVEL_FL[l]} ( [ ] mení hladinu)`}
+        >
+          {l === "sfc" ? levelLabel(l) : l}
+          {l !== "sfc" && <small>{LEVEL_FL[l]}</small>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ModelPills() {
   return (
     <div class="model-pills glass" role="radiogroup" aria-label="Model">
@@ -76,8 +97,8 @@ function ModelPills() {
           aria-checked={modelId.value === m.id}
           class={modelId.value === m.id ? "active" : ""}
           disabled={!m.enabled}
-          onClick={() => (modelId.value = m.id)}
-          title={m.enabled ? `${m.label} (M prepína)` : `${m.label} – pribudne vo Fáze 3`}
+          onClick={() => selectModel(m.id)}
+          title={m.enabled ? `${m.label} (M prepína)` : `${m.label} – pribudne neskôr`}
         >
           {m.label.replace(/ 0,25°$/, "")}
           <small>{Math.round(m.resolutionDeg * 111)} km</small>
@@ -95,6 +116,7 @@ export function BottomBar() {
           <OverlayToggles />
           <MapButtons />
         </div>
+        <LevelPills />
         <ModelPills />
         <Legend />
       </div>

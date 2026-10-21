@@ -4,6 +4,38 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-009 · 2026-10-21 · Fáza 3: tlakové hladiny, ECMWF a GFS na mape
+
+**Overené** v `data_spatial/<model>/latest.json` a malým testom v Node (čítanie výrezu a porovnanie s Forecast API v 3 bodoch, rozdiely ≤ 0,05):
+
+| Model (mapa) | Priečinky | Mriežka | Krok | Hladiny (hPa) | Chýba |
+|---|---|---|---|---|---|
+| ICON-EU | `dwd_icon_eu` | 0,0625°, Európa | 1 h (+78 h), potom 3 h | 1000–50 (17) | – |
+| ECMWF IFS 0,25° | `ecmwf_ifs025` | 0,25° globálna 721×1440 | 3 h | 1000–10 (14, bez 800/900/950) | nárazy vetra |
+| GFS 0,25° | `ncep_gfs025` + `ncep_gfs013` | 0,25° globálna + 0,117° (Gauss, 1536×3072) | 1 h, neskôr 3 h, 16 dní | 1000–10 (44) | – |
+
+- **GFS je v Open-Meteo rozdelený.** `ncep_gfs025` má hladiny, MSLP, nárazy, CAPE, CIN a LI. `ncep_gfs013` má prízemné polia (T 2 m, RH 2 m, vietor 10 m, zrážky, oblačnosť). Model GFS preto číta z oboch priečinkov **toho istého behu** (`combineRuns`, `partFor`). Doplnok z iného behu sa nepoužije, jeho vrstvy sa zablokujú.
+- `ncep_gfs013` má Gaussovu mriežku (šírky nie sú presne rovnomerné). Ako pravidelnú ju čítame s odchýlkou zanedbateľnou pre Európu, hodnoty sedia s API.
+- **Globálne modely sa čítajú iba vo výreze** 25–75° N, 35° W – 65° E (`EUROPE_CROP`, `cropRanges`). Pri 0,25° je to 201×401 buniek a vďaka chunkom 32×32 sa prenesie iba potrebná časť.
+- Riadok 0 je juh vo všetkých modeloch (overené hodnotami).
+
+**Vrstvy a hladiny:**
+- Hladina sa volí v spodnej lište (Povrch / 850 / 700 / 500 / 300 / 250 hPa s orientačnou FL) alebo klávesmi `[` `]`. Hladina je v URL (`lv=`).
+- Jedna vrstva (teplota, rosný bod, vietor, vlhkosť) má variant pri povrchu aj v hladine (`resolveLayer`). Vrstva iba pri povrchu (zrážky, oblačnosť, nárazy, MSLP) sa pri zvolenej hladine kreslí pri povrchu a štítok to uvádza („Zrážky (povrch)“). Geopotenciál existuje iba v hladinách.
+- Odvodené polia: rosný bod z T a RH (Bolton, `lib/thermo`), relatívna topografia = Z500 − Z1000.
+- Škály: 850 a 700 hPa používajú prízemnú teplotu a vietor. Od 500 hPa vyššie sú škály výškové (teplota −70…+20 °C, vietor 0–90 m/s). Geopotenciál má škálu pre každú hladinu.
+- **Izočiary:** pri povrchu izobary (4 hPa), v hladine izohypsy (4 dam do 500 hPa, 8 dam vyššie, popisky v dam). Pri relatívnej topografii sú to jej vlastné izočiary (4 dam, zvýraznené 528 a 552 dam). **Izotermy** idú po 5 K, pod nulou modré, nad nulou červené a 0 °C hrubá. Zriedenie mriežky pre výpočet sa riadi rozlíšením (cieľ ~0,125°).
+- Častice vetra idú v zvolenej hladine, vo výške pomalšie (0,05 namiesto 0,12 px na m/s).
+
+**Overenie v prehliadači:** hodnota pod kurzorom sa zhoduje s API (ICON-EU T500 −13,1/−13,1 °C, ECMWF vietor 300 hPa 69/69,4 km/h, GFS T2m 6,5/6,6 °C).
+
+**Modely s vysokým rozlíšením pre Slovensko** (záujmová oblasť vlastníka, ďalší krok):
+- `chmi_aladin_central_europe_2km`: BBOX 38,6–56,2° N, 1,3–34,3° E, celé Slovensko, hladiny 1000–100 hPa, 72 h. **Projektovaná mriežka** (nie lat/lon), potrebuje prepočet súradníc vo vrstvách.
+- `dwd_icon_d2`: končí na 20,34° E, **východné Slovensko nepokrýva**.
+- `geosphere_arome_austria`: po 22,1° E, lat/lon, bez hladín.
+
+---
+
 ## R-008 · 2026-10-21 · Rozloženie UI podľa Windy, mobil ako plnohodnotný cieľ
 
 **Rozhodnutie (na žiadosť vlastníka, podľa screenshotov Windy):** stránka sa používa na PC aj na iPhone. Rozloženie:

@@ -1,13 +1,14 @@
 // Serializácia pohľadu (model, beh, vrstva, prekrytia, čas, poloha mapy) do URL hash.
 // Čisté funkcie bez závislosti od DOM – testované.
 
-import type { OverlayId } from "../config/layers.config";
+import { LEVELS, type Level, type OverlayId } from "../config/layers.config";
 
 export interface ViewState {
   model: string;
   /** null = vždy najnovší beh */
   run: string | null;
   layer: string;
+  level: Level;
   overlays: OverlayId[];
   /** ISO čas platnosti; null = prvý krok behu */
   time: string | null;
@@ -15,7 +16,7 @@ export interface ViewState {
   zoom: number;
 }
 
-const OVERLAY_IDS: readonly OverlayId[] = ["isobars", "particles"];
+const OVERLAY_IDS: readonly OverlayId[] = ["isobars", "isotherms", "particles"];
 
 /** "2026-10-21T06:00:00.000Z" → "2026-10-21T06" (hodinová presnosť stačí) */
 export function compactTime(iso: string): string {
@@ -33,6 +34,7 @@ export function encodeHash(s: ViewState): string {
   p.set("m", s.model);
   p.set("r", s.run ? compactTime(s.run) : "latest");
   p.set("l", s.layer);
+  p.set("lv", String(s.level));
   p.set("o", s.overlays.join(","));
   if (s.time) p.set("t", compactTime(s.time));
   p.set("v", `${s.center[0].toFixed(2)},${s.center[1].toFixed(2)},${s.zoom.toFixed(2)}`);
@@ -51,6 +53,11 @@ export function decodeHash(hash: string, fallback: ViewState): ViewState {
   else if (r) out.run = expandTime(r) ?? out.run;
   const l = p.get("l");
   if (l) out.layer = l;
+  const lv = p.get("lv");
+  if (lv) {
+    const level = (lv === "sfc" ? "sfc" : Number(lv)) as Level;
+    if (LEVELS.includes(level)) out.level = level;
+  }
   const o = p.get("o");
   if (o !== null) out.overlays = o.split(",").filter((x): x is OverlayId => (OVERLAY_IDS as string[]).includes(x));
   const t = p.get("t");

@@ -1,11 +1,11 @@
 // Centrálny stav aplikácie (Preact signals). Pohľad sa zrkadlí do URL hash a localStorage,
 // jednotky iba do localStorage.
 
-import { batch, computed, effect, signal } from "@preact/signals";
-import { DEFAULT_LAYER_ID, getLayer, type OverlayId } from "../config/layers.config";
+import { batch, computed, effect, signal, untracked } from "@preact/signals";
+import { DEFAULT_LAYER_ID, getLayer, LEVELS, resolveLayer, type Level, type OverlayId } from "../config/layers.config";
 import { DEFAULT_MODEL_ID, getModel, MODELS } from "../config/models";
 import { pointModelForMap } from "../config/pointModels";
-import { fetchLatestRun, fetchRunMeta, listRuns, type RunInfo } from "../data/openMeteoSpatial";
+import { combineRuns, fetchLatestRun, fetchRunMeta, listRuns, type RunInfo } from "../data/openMeteoSpatial";
 import { isUnitSettings, PRESETS, type UnitSettings } from "../lib/units";
 import { decodeHash, encodeHash, type ViewState } from "./viewState";
 
@@ -16,10 +16,12 @@ const DEFAULT_VIEW: ViewState = {
   model: DEFAULT_MODEL_ID,
   run: null,
   layer: DEFAULT_LAYER_ID,
+  level: "sfc",
   overlays: ["isobars"],
   time: null,
-  center: [15, 50],
-  zoom: 3.6,
+  // predvolene Slovensko (záujmová oblasť vlastníka), Európa ostáva v dohľade
+  center: [19.6, 48.7],
+  zoom: 5.4,
 };
 
 function readLocal<T>(key: string): T | null {
@@ -46,7 +48,7 @@ function initialView(): ViewState {
   const v = location.hash.length > 1 ? decodeHash(location.hash, fromStorage) : fromStorage;
   // neznámy/nepodporovaný model alebo vrstva → predvolené
   if (!MODELS.some((m) => m.id === v.model && m.enabled)) v.model = DEFAULT_MODEL_ID;
-  if (!getLayer(v.layer)) v.layer = DEFAULT_LAYER_ID;
+  v.layer = getLayer(v.layer)?.id ?? DEFAULT_LAYER_ID;
   return v;
 }
 
@@ -57,6 +59,8 @@ export const modelId = signal(init.model);
 /** Vybraný beh (ISO) alebo null = najnovší */
 export const runChoice = signal<string | null>(init.run);
 export const layerId = signal(init.layer);
+/** Zvolená hladina; vrstvy bez variantu pre hladinu sa kreslia pri povrchu */
+export const level = signal<Level>(init.level);
 export const overlays = signal<OverlayId[]>(init.overlays);
 /** Vybraný čas platnosti (ISO); null = prvý krok */
 export const timeIso = signal<string | null>(init.time);
@@ -86,7 +90,8 @@ export const pointTab = signal<PointTab>("meteogram");
 export const pointModelId = signal(pointModelForMap(init.model));
 
 export const model = computed(() => getModel(modelId.value));
-export const layer = computed(() => getLayer(layerId.value)!);
+/** Vrstva vyriešená pre zvolenú hladinu (zdroj, škála, názov s hladinou) */
+export const layer = computed(() => resolveLayer(getLayer(layerId.value)!, level.value));
 
 /** Index aktuálneho kroku v runInfo.validTimes (najbližší k timeIso) */
 export const timeIndex = computed(() => {
@@ -127,9 +132,36 @@ export function selectLayer(id: string) {
   const l = getLayer(id);
   if (!l) return;
   batch(() => {
-    layerId.value = id;
+    layerId.value = l.id;
+    // vrstva iba v hladinách (geopotenciál) pri povrchu → 500 hPa
+    if (!l.surface && level.value === "sfc") level.value = 500;
     for (const [o, on] of Object.entries(l.overlays ?? {})) toggleOverlay(o as OverlayId, on);
   });
+}
+
+/** Zmena modelu: zvolený beh patril inému modelu → späť na najnovší */
+export function selectModel(id: string) {
+  if (id === modelId.value) return;
+  batch(() => {
+    modelId.value = id;
+    runChoice.value = null;
+  });
+}
+
+export function selectLevel(lv: Level) {
+  batch(() => {
+    level.value = lv;
+    // geopotenciál pri povrchu nemá zmysel → tlak MSLP (izobary sú jeho prízemnou obdobou)
+    const l = getLayer(layerId.value);
+    if (lv === "sfc" && l && !l.surface) layerId.value = "pressure_msl";
+  });
+}
+
+/** Posun hladiny klávesmi [ ] (−1 = nižšie, k povrchu) */
+export function stepLevel(delta: number) {
+  const i = LEVELS.indexOf(level.value);
+  const next = LEVELS[Math.max(0, Math.min(LEVELS.length - 1, i + delta))]!;
+  if (next !== level.value) selectLevel(next);
 }
 
 // --- Perzistencia pohľadu -------------------------------------------------
@@ -138,6 +170,7 @@ const currentView = computed<ViewState>(() => ({
   model: modelId.value,
   run: runChoice.value,
   layer: layerId.value,
+  level: level.value,
   overlays: overlays.value,
   time: timeIso.value,
   center: mapView.value.center,
@@ -163,7 +196,9 @@ window.addEventListener("hashchange", () => {
   batch(() => {
     if (MODELS.some((m) => m.id === v.model && m.enabled)) modelId.value = v.model;
     runChoice.value = v.run;
-    if (getLayer(v.layer)) layerId.value = v.layer;
+    const l = getLayer(v.layer);
+    if (l) layerId.value = l.id;
+    level.value = v.level;
     overlays.value = v.overlays;
     timeIso.value = v.time;
     mapView.value = { center: v.center, zoom: v.zoom };
@@ -176,14 +211,26 @@ window.addEventListener("hashchange", () => {
 const runReload = signal(0);
 
 let runAbort: AbortController | null = null;
+/** Hlavný beh + doplnkové priečinky toho istého behu (GFS) */
+async function loadRun(choice: string | null, signal: AbortSignal): Promise<RunInfo> {
+  const m = model.peek();
+  const [primaryId, ...extraIds] = m.sources as [string, ...string[]];
+  const primary = choice ? await fetchRunMeta(primaryId, new Date(choice), signal) : await fetchLatestRun(primaryId, signal);
+  // doplnok nemusí mať beh ešte hotový – vtedy jeho premenné chýbajú (vrstvy sa zablokujú)
+  const extras = await Promise.all(
+    extraIds.map((id) => fetchRunMeta(id, primary.referenceTime, signal).catch(() => null)),
+  );
+  return combineRuns(primary, extras.filter((e): e is RunInfo => e !== null), m.crop ?? null);
+}
+
 effect(() => {
-  const spatialId = model.value.spatialId;
+  void model.value;
   const choice = runChoice.value;
   void runReload.value;
   runAbort?.abort();
   const ctrl = (runAbort = new AbortController());
   runError.value = null;
-  const p = choice ? fetchRunMeta(spatialId, new Date(choice), ctrl.signal) : fetchLatestRun(spatialId, ctrl.signal);
+  const p = untracked(() => loadRun(choice, ctrl.signal));
   p.then((r) => {
     if (ctrl.signal.aborted) return;
     batch(() => {
@@ -200,10 +247,10 @@ effect(() => {
 });
 
 effect(() => {
-  const spatialId = model.value.spatialId;
+  const spatialId = model.value.sources[0]!;
   listRuns(spatialId)
     .then((list) => {
-      if (model.value.spatialId === spatialId) runs.value = list;
+      if (model.peek().sources[0] === spatialId) runs.value = list;
     })
     .catch(() => (runs.value = []));
 });

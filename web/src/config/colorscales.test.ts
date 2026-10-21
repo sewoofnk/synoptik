@@ -42,3 +42,17 @@ describe("cssGradient", () => {
     expect(g.endsWith("100%)")).toBe(true);
   });
 });
+
+describe("škály tlakových hladín", () => {
+  it("každá hladina má teplotu, vietor a geopotenciál", async () => {
+    const { COLOR_SCALES } = await import("./colorscales");
+    for (const l of [850, 700, 500, 300, 250]) {
+      expect(COLOR_SCALES[`temperature_${l}`]).toBeDefined();
+      expect(COLOR_SCALES[`wind_${l}`]).toBeDefined();
+      expect(COLOR_SCALES[`gph_${l}`]).toBeDefined();
+    }
+    // 0 °C ostáva ostrá hranica aj vo výškovej škále
+    const t = COLOR_SCALES.temperature_upper!;
+    expect(colorAt(t, 273.14)[2]).toBeGreaterThan(colorAt(t, 273.15)[2]);
+  });
+});

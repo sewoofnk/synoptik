@@ -3,8 +3,10 @@
 // hotové polia v pamäti (LRU).
 
 import { BrowserBlockCache, LruBlockCache, OmDataType, OmHttpBackendPool, type BlockCache } from "@openmeteo/file-reader";
-import { gridFromBbox, type Grid } from "./grid";
-import { stepUrl, type RunInfo } from "./openMeteoSpatial";
+import type { FieldSource } from "../config/layers.config";
+import { dewpointFromRH } from "../lib/thermo";
+import { cropRanges, gridFromBbox, type Grid } from "./grid";
+import { partFor, stepUrl, type RunInfo } from "./openMeteoSpatial";
 
 /** Premenná v danom kroku nie je (napr. zrážky a nárazy v kroku +0 h – sú to hodnoty za interval) */
 export class MissingVariableError extends Error {
@@ -92,18 +94,28 @@ function cached(key: string): Promise<Field> | undefined {
 }
 
 async function readVariable(run: RunInfo, validTime: Date, variable: string): Promise<Field> {
+  const part = partFor(run, variable, validTime);
+  if (!part) throw new MissingVariableError(variable);
   blockCache ??= createBlockCache();
   const cache = await blockCache;
-  const url = stepUrl(run.spatialId, run.referenceTime, validTime);
+  const url = stepUrl(part.spatialId, part.referenceTime, validTime);
   return pool.withReader(url, cache, async (root) => {
     const v = await root.getChildByName(variable);
     if (!v) throw new MissingVariableError(variable);
     try {
       const [ny, nx] = v.getDimensions() as [number, number];
-      const data = await v.read({ type: OmDataType.FloatArray, ranges: [{ start: 0, end: ny }, { start: 0, end: nx }] });
+      // globálne modely: iba výrez Európy
+      const c = run.crop ? cropRanges(part.bbox, ny, nx, run.crop) : { y0: 0, y1: ny, x0: 0, x1: nx, bbox: part.bbox };
+      const data = await v.read({
+        type: OmDataType.FloatArray,
+        ranges: [
+          { start: c.y0, end: c.y1 },
+          { start: c.x0, end: c.x1 },
+        ],
+      });
       convertToSI(variable, data);
       const [min, max] = minMax(data);
-      return { variable, grid: gridFromBbox(run.bbox, ny, nx), data, min, max };
+      return { variable, grid: gridFromBbox(c.bbox, c.y1 - c.y0, c.x1 - c.x0), data, min, max };
     } finally {
       v.dispose();
     }
@@ -118,20 +130,46 @@ export function loadField(run: RunInfo, validTime: Date, variable: string): Prom
   return cached(key) ?? remember(key, readVariable(run, validTime, variable));
 }
 
-/** Rýchlosť vetra z u/v zložiek (odvodené pole, tiež cachované) */
-export function loadSpeed(run: RunInfo, validTime: Date, u: string, v: string): Promise<Field> {
-  const variable = `speed(${u})`;
-  const key = fieldKey(run, validTime, variable);
+/** Odvodené pole z dvoch premenných (bunka po bunke), cachované pod vlastným kľúčom */
+function derived(
+  run: RunInfo,
+  validTime: Date,
+  name: string,
+  a: string,
+  b: string,
+  f: (x: number, y: number) => number,
+): Promise<Field> {
+  const key = fieldKey(run, validTime, name);
   return (
     cached(key) ??
     remember(
       key,
-      Promise.all([loadField(run, validTime, u), loadField(run, validTime, v)]).then(([fu, fv]) => {
-        const data = new Float32Array(fu.data.length);
-        for (let i = 0; i < data.length; i++) data[i] = Math.hypot(fu.data[i]!, fv.data[i]!);
+      Promise.all([loadField(run, validTime, a), loadField(run, validTime, b)]).then(([fa, fb]) => {
+        if (fa.data.length !== fb.data.length) throw new Error(`${a} a ${b} majú rôzne mriežky`);
+        const data = new Float32Array(fa.data.length);
+        for (let i = 0; i < data.length; i++) data[i] = f(fa.data[i]!, fb.data[i]!);
         const [min, max] = minMax(data);
-        return { variable, grid: fu.grid, data, min, max };
+        return { variable: name, grid: fa.grid, data, min, max };
       }),
     )
   );
+}
+
+/** Rýchlosť vetra z u/v zložiek */
+export function loadSpeed(run: RunInfo, validTime: Date, u: string, v: string): Promise<Field> {
+  return derived(run, validTime, `speed(${u})`, u, v, Math.hypot);
+}
+
+/** Pole podľa zdroja vrstvy (priama premenná alebo odvodené) */
+export function loadSource(run: RunInfo, validTime: Date, src: FieldSource): Promise<Field> {
+  switch (src.kind) {
+    case "scalar":
+      return loadField(run, validTime, src.variable);
+    case "speed":
+      return loadSpeed(run, validTime, src.u, src.v);
+    case "dewpoint":
+      return derived(run, validTime, `dewpoint(${src.t})`, src.t, src.rh, dewpointFromRH);
+    case "diff":
+      return derived(run, validTime, `diff(${src.a},${src.b})`, src.a, src.b, (x, y) => x - y);
+  }
 }

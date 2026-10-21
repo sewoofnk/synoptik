@@ -1,25 +1,52 @@
-// Register modelov. `spatialId` = názov priečinka v s3://openmeteo/data_spatial/
-// (overené 2026-10-21, pozri docs/rozhodnutia.md).
+// Register modelov pre mapové polia. `sources` = priečinky v s3://openmeteo/data_spatial/
+// (overené 2026-10-21, pozri docs/rozhodnutia.md R-001 a R-009).
+
+/** [latMin, lonMin, latMax, lonMax] */
+export type Bbox = [number, number, number, number];
 
 export interface ModelDef {
   id: string;
   /** Krátky názov do UI */
   label: string;
-  /** Priečinok v Open-Meteo data_spatial */
-  spatialId: string;
+  /**
+   * Priečinky v Open-Meteo data_spatial. Prvý je hlavný (zoznam behov, časy krokov);
+   * ďalšie dopĺňajú premenné z toho istého behu (GFS: hladiny v 0,25°, prízemné polia v 0,13°).
+   */
+  sources: string[];
   /** Poskytovateľ dát pre atribúciu */
   provider: "DWD" | "ECMWF" | "NOAA" | "Météo-France";
   /** Natívne rozlíšenie (stupne) */
   resolutionDeg: number;
-  /** Zatiaľ podporovaný vo výbere (ostatné prídu vo Fáze 3) */
+  /** Globálne modely: čítať iba výrez Európy (chunky 32×32 → prenesie sa iba potrebná časť) */
+  crop?: Bbox;
+  /** Podporovaný vo výbere */
   enabled: boolean;
 }
 
+/** Výrez Európy pre globálne modely (o niečo väčší než ICON-EU) */
+export const EUROPE_CROP: Bbox = [25, -35, 75, 65];
+
 export const MODELS: readonly ModelDef[] = [
-  { id: "icon_eu", label: "ICON-EU", spatialId: "dwd_icon_eu", provider: "DWD", resolutionDeg: 0.0625, enabled: true },
-  { id: "icon_d2", label: "ICON-D2", spatialId: "dwd_icon_d2", provider: "DWD", resolutionDeg: 0.02, enabled: false },
-  { id: "ecmwf_ifs025", label: "ECMWF IFS 0,25°", spatialId: "ecmwf_ifs025", provider: "ECMWF", resolutionDeg: 0.25, enabled: false },
-  { id: "gfs025", label: "GFS 0,25°", spatialId: "ncep_gfs025", provider: "NOAA", resolutionDeg: 0.25, enabled: false },
+  { id: "icon_eu", label: "ICON-EU", sources: ["dwd_icon_eu"], provider: "DWD", resolutionDeg: 0.0625, enabled: true },
+  {
+    id: "ecmwf_ifs025",
+    label: "ECMWF IFS 0,25°",
+    sources: ["ecmwf_ifs025"],
+    provider: "ECMWF",
+    resolutionDeg: 0.25,
+    crop: EUROPE_CROP,
+    enabled: true,
+  },
+  {
+    id: "gfs025",
+    label: "GFS 0,25°",
+    sources: ["ncep_gfs025", "ncep_gfs013"],
+    provider: "NOAA",
+    resolutionDeg: 0.25,
+    crop: EUROPE_CROP,
+    enabled: true,
+  },
+  { id: "icon_d2", label: "ICON-D2", sources: ["dwd_icon_d2"], provider: "DWD", resolutionDeg: 0.02, enabled: false },
 ];
 
 export const DEFAULT_MODEL_ID = "icon_eu";

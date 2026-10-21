@@ -131,6 +131,82 @@ export const COLOR_SCALES: Record<string, ColorScale> = {
   },
 };
 
+// --- Tlakové hladiny -------------------------------------------------------
+
+/** Spojitá paleta pre geopotenciál a relatívnu topografiu: nízke hodnoty (chladný vzduch) modré, vysoké červené */
+const HEIGHT_PALETTE = ["#3b2a7a", "#3d63c0", "#4fa3d6", "#7fcf9a", "#e6dc72", "#f1a149", "#d9512e", "#8e1d3a"];
+
+function heightScale(id: string, min: number, max: number): ColorScale {
+  const n = HEIGHT_PALETTE.length - 1;
+  return {
+    id,
+    min,
+    max,
+    transform: "linear",
+    stops: HEIGHT_PALETTE.map((c, i) => [min + ((max - min) * i) / n, c] as [number, string]),
+  };
+}
+
+Object.assign(COLOR_SCALES, {
+  // Teplota vo výške (500 hPa a vyššie): viac odtieňov v mraze, 0 °C ostáva ostrá hranica
+  temperature_upper: {
+    id: "temperature_upper",
+    min: C(-70),
+    max: C(20),
+    transform: "linear",
+    stops: [
+      [C(-70), "#f3e9ff"],
+      [C(-60), "#d2b0ff"],
+      [C(-50), "#a46ff0"],
+      [C(-40), "#6b44d4"],
+      [C(-30), "#3b49c9"],
+      [C(-20), "#2f7fe0"],
+      [C(-10), "#5fb7f0"],
+      [C(-0.01), "#b4e2ff"],
+      [C(0), "#bfe8a6"],
+      [C(10), "#f5c844"],
+      [C(20), "#e2522b"],
+    ],
+  },
+  // Vietor vo výške (m/s): dýzové prúdenie 30–90 m/s
+  wind_upper: {
+    id: "wind_upper",
+    min: 0,
+    max: 90,
+    transform: "linear",
+    stops: [
+      [0, "#4b5ea8"],
+      [10, "#3a8fbf"],
+      [20, "#43b39a"],
+      [30, "#a8c94a"],
+      [40, "#f2c23a"],
+      [50, "#f2853a"],
+      [60, "#de3f3a"],
+      [70, "#b0237a"],
+      [80, "#6c2296"],
+      [90, "#f0d0ff"],
+    ],
+  },
+  // Geopotenciálna výška (gpm) – rozsah podľa hladiny
+  gph_850: heightScale("gph_850", 1100, 1650),
+  gph_700: heightScale("gph_700", 2600, 3250),
+  gph_500: heightScale("gph_500", 4900, 5950),
+  gph_300: heightScale("gph_300", 8300, 9750),
+  gph_250: heightScale("gph_250", 9400, 11000),
+  // Relatívna topografia 500/1000 hPa (gpm); 5280 m ≈ hranica dážď/sneh
+  thickness: heightScale("thickness", 4950, 5850),
+} satisfies Record<string, ColorScale>);
+
+// Hladiny 850 a 700 hPa používajú prízemné škály, vyššie hladiny „výškové“
+for (const l of [850, 700]) {
+  COLOR_SCALES[`temperature_${l}`] = COLOR_SCALES.temperature!;
+  COLOR_SCALES[`wind_${l}`] = COLOR_SCALES.wind!;
+}
+for (const l of [500, 300, 250]) {
+  COLOR_SCALES[`temperature_${l}`] = COLOR_SCALES.temperature_upper!;
+  COLOR_SCALES[`wind_${l}`] = COLOR_SCALES.wind_upper!;
+}
+
 function parseColor(hex: string): [number, number, number, number] {
   const h = hex.replace("#", "");
   const n = (i: number) => parseInt(h.slice(i, i + 2), 16);

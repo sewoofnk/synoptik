@@ -2,6 +2,7 @@
 // Štruktúra: data_spatial/<model>/<YYYY>/<MM>/<DD>/<hhmm>Z/<YYYY-MM-DDThhmm>.om
 // Posledný dokončený beh: data_spatial/<model>/latest.json, metadáta behu: <run>/meta.json
 
+import type { Bbox } from "../config/models";
 import { parseWktBbox } from "./grid";
 
 export const S3_BUCKET = "https://openmeteo.s3.amazonaws.com";
@@ -17,17 +18,28 @@ interface MetaJson {
   last_modified_time?: string;
 }
 
-export interface RunInfo {
+/** Jeden priečinok data_spatial v rámci behu */
+export interface RunPart {
   spatialId: string;
   /** Init time behu (UTC) */
   referenceTime: Date;
   /** Časy platnosti dostupných krokov (UTC), vzostupne */
   validTimes: Date[];
   variables: string[];
+  /** [latMin, lonMin, latMax, lonMax] stredov krajných buniek */
+  bbox: Bbox;
+}
+
+/**
+ * Beh modelu. Polia RunPart patria hlavnému priečinku; `variables` je zjednotenie všetkých
+ * častí (GFS = ncep_gfs025 + ncep_gfs013) a `parts` určuje, odkiaľ sa premenná číta.
+ */
+export interface RunInfo extends RunPart {
   completed: boolean;
   lastModified: Date | null;
-  /** [latMin, lonMin, latMax, lonMax] stredov krajných buniek */
-  bbox: [number, number, number, number];
+  parts: RunPart[];
+  /** Výrez, ktorý sa číta (globálne modely); null = celá mriežka */
+  crop: Bbox | null;
 }
 
 /** Open-Meteo používa ISO bez sekúnd ("2026-10-21T12:00Z"), Date ho prečíta priamo. */
@@ -55,7 +67,33 @@ export function parseMeta(spatialId: string, json: unknown): RunInfo {
     completed: j.completed === true,
     lastModified: j.last_modified_time ? parseUtc(j.last_modified_time) : null,
     bbox: parseWktBbox(j.crs_wkt),
+    parts: [],
+    crop: null,
   };
+}
+
+/**
+ * Spojí hlavný beh s doplnkovými priečinkami toho istého behu. Doplnok s iným init time
+ * sa nepoužije (premenné by pochádzali z iného behu, než ukazuje UI).
+ */
+export function combineRuns(primary: RunInfo, extras: RunInfo[], crop: Bbox | null): RunInfo {
+  const part = (r: RunInfo): RunPart => ({
+    spatialId: r.spatialId,
+    referenceTime: r.referenceTime,
+    validTimes: r.validTimes,
+    variables: r.variables,
+    bbox: r.bbox,
+  });
+  const same = extras.filter((e) => e.referenceTime.getTime() === primary.referenceTime.getTime());
+  const parts = [part(primary), ...same.map(part)];
+  return { ...primary, parts, crop, variables: [...new Set(parts.flatMap((p) => p.variables))] };
+}
+
+/** Časť behu, z ktorej sa číta premenná v danom kroku (prvá, ktorá ju má) */
+export function partFor(run: RunInfo, variable: string, validTime: Date): RunPart | null {
+  const t = validTime.getTime();
+  const parts = run.parts.length ? run.parts : [run];
+  return parts.find((p) => p.variables.includes(variable) && p.validTimes.some((v) => v.getTime() === t)) ?? null;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");

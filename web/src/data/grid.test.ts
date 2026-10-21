@@ -36,3 +36,20 @@ describe("grid", () => {
     expect(sampleNearest(g, data, 52, 11)).toBeNaN();
   });
 });
+
+describe("cropRanges", () => {
+  it("výrez Európy z globálnej 0,25° mriežky", async () => {
+    const { cropRanges } = await import("./grid");
+    const r = cropRanges([-90, -180, 90, 179.75], 721, 1440, [25, -35, 75, 65]);
+    expect([r.y0, r.y1, r.x0, r.x1]).toEqual([460, 661, 580, 981]);
+    expect(r.bbox).toEqual([25, -35, 75, 65]);
+  });
+
+  it("výrez presahujúci mriežku sa oreže (ICON-EU)", async () => {
+    const { cropRanges } = await import("./grid");
+    const r = cropRanges([29.5, -23.5, 70.5, 62.5], 657, 1377, [25, -35, 75, 65]);
+    expect([r.y0, r.y1, r.x0, r.x1]).toEqual([0, 657, 0, 1377]);
+    expect(r.bbox[0]).toBeCloseTo(29.5, 9);
+    expect(r.bbox[3]).toBeCloseTo(62.5, 9);
+  });
+});

@@ -44,3 +44,27 @@ describe("openMeteoSpatial", () => {
     ]);
   });
 });
+
+describe("combineRuns / partFor (GFS z dvoch priečinkov)", () => {
+  const gfs025 = { ...sample, variables: ["pressure_msl", "temperature_500hPa"], reference_time: "2026-10-21T06:00:00Z" };
+  const gfs013 = { ...sample, variables: ["temperature_2m"], reference_time: "2026-10-21T06:00:00Z" };
+  const older = { ...sample, variables: ["temperature_2m"], reference_time: "2026-10-21T00:00:00Z" };
+
+  it("zjednotí premenné a vyberie priečinok podľa premennej", async () => {
+    const { combineRuns, partFor } = await import("./openMeteoSpatial");
+    const r = combineRuns(parseMeta("ncep_gfs025", gfs025), [parseMeta("ncep_gfs013", gfs013)], [25, -35, 75, 65]);
+    expect(r.variables.sort()).toEqual(["pressure_msl", "temperature_2m", "temperature_500hPa"]);
+    const t = new Date("2026-10-21T10:00Z");
+    expect(partFor(r, "temperature_2m", t)!.spatialId).toBe("ncep_gfs013");
+    expect(partFor(r, "temperature_500hPa", t)!.spatialId).toBe("ncep_gfs025");
+    expect(partFor(r, "temperature_2m", new Date("2026-10-21T11:00Z"))).toBeNull();
+    expect(r.crop).toEqual([25, -35, 75, 65]);
+  });
+
+  it("doplnok z iného behu sa nepoužije", async () => {
+    const { combineRuns } = await import("./openMeteoSpatial");
+    const r = combineRuns(parseMeta("ncep_gfs025", gfs025), [parseMeta("ncep_gfs013", older)], null);
+    expect(r.variables).not.toContain("temperature_2m");
+    expect(r.parts).toHaveLength(1);
+  });
+});

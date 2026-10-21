@@ -1,6 +1,6 @@
 import { COLOR_SCALES, cssGradient } from "../config/colorscales";
-import { LAYERS, sourceVariables } from "../config/layers.config";
-import { layerId, menuOpen, runInfo, selectLayer } from "../state/store";
+import { isLayerAvailable, LAYERS, previewScale } from "../config/layers.config";
+import { layerId, level, menuOpen, runInfo, selectLayer } from "../state/store";
 import { Icon } from "./icons";
 import { LoginButton } from "./LoginButton";
 
@@ -20,7 +20,7 @@ export function QuickLayers() {
       </button>
       <nav class="quick-list" aria-label="Rýchly výber vrstvy">
         {quick.map((l) => {
-          const ok = !vars || sourceVariables(l.source).every((v) => vars.includes(v));
+          const ok = isLayerAvailable(l, level.value, vars);
           const active = layerId.value === l.id;
           return (
             <button
@@ -32,7 +32,7 @@ export function QuickLayers() {
               title={ok ? l.label : `${l.label} – model túto premennú nemá`}
             >
               <span class="pill-label">{l.short ?? l.label}</span>
-              <span class="round" style={{ background: cssGradient(COLOR_SCALES[l.scale]!) }}>
+              <span class="round" style={{ background: cssGradient(COLOR_SCALES[previewScale(l)]!) }}>
                 <Icon name={l.icon} size={20} badge={l.badge} />
               </span>
             </button>

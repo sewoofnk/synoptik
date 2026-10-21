@@ -59,3 +59,30 @@ export function sampleNearest(g: Grid, data: ArrayLike<number>, lat: number, lon
   if (x < 0 || y < 0 || x >= g.nx || y >= g.ny) return NaN;
   return data[y * g.nx + x]!;
 }
+
+/**
+ * Indexy výrezu [y0, y1) × [x0, x1) mriežky s rozmermi ny × nx a bboxom stredov buniek,
+ * ktorý pokryje `crop` (orezané na mriežku). Vracia aj bbox stredov krajných buniek výrezu.
+ */
+export function cropRanges(
+  bbox: [number, number, number, number],
+  ny: number,
+  nx: number,
+  crop: [number, number, number, number],
+): { y0: number; y1: number; x0: number; x1: number; bbox: [number, number, number, number] } {
+  const [latMin, lonMin, latMax, lonMax] = bbox;
+  const dlat = (latMax - latMin) / (ny - 1);
+  const dlon = (lonMax - lonMin) / (nx - 1);
+  const clamp = (v: number, n: number) => Math.max(0, Math.min(n, v));
+  const y0 = clamp(Math.floor((crop[0] - latMin) / dlat), ny - 1);
+  const y1 = clamp(Math.ceil((crop[2] - latMin) / dlat) + 1, ny);
+  const x0 = clamp(Math.floor((crop[1] - lonMin) / dlon), nx - 1);
+  const x1 = clamp(Math.ceil((crop[3] - lonMin) / dlon) + 1, nx);
+  return {
+    y0,
+    y1,
+    x0,
+    x1,
+    bbox: [latMin + y0 * dlat, lonMin + x0 * dlon, latMin + (y1 - 1) * dlat, lonMin + (x1 - 1) * dlon],
+  };
+}
