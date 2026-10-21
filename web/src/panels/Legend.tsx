@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "preact/hooks";
 import { buildLut, COLOR_SCALES, scalePosition } from "../config/colorscales";
-import { formatLead, formatRun, formatValidUtc } from "../lib/time";
-import { fromSI, toSI, unitFor, unitLabel } from "../lib/units";
-import { layer, model, runInfo, timeIndex, units, validTime } from "../state/store";
+import { fromSI, toSI, UNIT_OPTIONS, unitFor, unitLabel, type UnitSettings } from "../lib/units";
+import { layer, runInfo, timeIndex, units, validTime } from "../state/store";
 
 /** "Pekné" čísla pre značky: krok 1/2/5 × 10^n, cca `count` značiek */
 export function niceTicks(min: number, max: number, count = 6): number[] {
@@ -20,7 +19,14 @@ function tickLabel(t: number): string {
   return Math.abs(t) >= 1 ? t.toFixed(1) : String(Number(t.toPrecision(1)));
 }
 
-// Legenda farebnej škály v aktuálnych jednotkách + model, beh a platnosť vrstvy.
+/** Ďalšia jednotka pre veličinu (klik na štítok jednotky v legende, ako vo Windy) */
+function cycleUnit(q: keyof typeof UNIT_OPTIONS, u: UnitSettings): UnitSettings {
+  const opts = UNIT_OPTIONS[q] as readonly string[];
+  const next = opts[(opts.indexOf(u[q]) + 1) % opts.length]!;
+  return { ...u, preset: "custom", [q]: next };
+}
+
+// Legenda farebnej škály v aktuálnych jednotkách. Klik na jednotku ju prepne.
 export function Legend() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const l = layer.value;
@@ -48,22 +54,29 @@ export function Legend() {
   if (scale.transform === "sqrt") ticks = [0.1, 1, 5, 10, 20, 40].map((mm) => fromSI(l.quantity, mm, unit));
   const tickPos = ticks
     .map((t) => ({ t, pos: scalePosition(scale, toSI(l.quantity, t, unit)) }))
-    .filter((x) => x.pos >= 0 && x.pos <= 1);
+    .filter((x) => x.pos >= 0.02 && x.pos <= 0.98);
 
   // dĺžka intervalu akumulácie = rozdiel od predchádzajúceho kroku
   let accum = "";
   if (l.accumulation && run && vt) {
     const i = timeIndex.value;
     const prev = i > 0 ? run.validTimes[i - 1]! : null;
-    accum = prev ? ` za ${Math.round((vt.getTime() - prev.getTime()) / 3_600_000)} h` : " (prvý krok)";
+    accum = prev ? `/${Math.round((vt.getTime() - prev.getTime()) / 3_600_000)} h` : "";
   }
+  const q = l.quantity === "percent" ? null : l.quantity;
 
   return (
-    <div class="legend">
-      <div class="legend-title">
-        {l.label}
-        {accum} [{unitLabel(l.quantity, u)}]
-      </div>
+    <div class="legend glass" title={`${l.label} [${unitLabel(l.quantity, u)}]`}>
+      <button
+        class="unit-chip"
+        disabled={!q}
+        onClick={() => q && (units.value = cycleUnit(q, u))}
+        title={q ? "Prepnúť jednotku" : undefined}
+        aria-label={`Jednotka ${unitLabel(l.quantity, u)}${q ? ", klik prepne" : ""}`}
+      >
+        {unitLabel(l.quantity, u)}
+        {accum}
+      </button>
       <div class="legend-bar">
         <canvas ref={canvas} width={256} height={1} />
         {tickPos.map(({ t, pos }) => (
@@ -72,11 +85,6 @@ export function Legend() {
           </span>
         ))}
       </div>
-      {run && vt && (
-        <div class="legend-meta">
-          {model.value.label} · beh {formatRun(run.referenceTime)} · {formatValidUtc(vt)} {formatLead(vt, run.referenceTime)}
-        </div>
-      )}
     </div>
   );
 }

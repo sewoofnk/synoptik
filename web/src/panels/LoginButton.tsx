@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
+import { Icon } from "./icons";
 
 // Prihlásenie cez Cloudflare Access. Aplikácia je verejná; Access chráni iba cestu
 // /prihlasenie (pozri docs/rozhodnutia.md, R-007). Po prihlásení Access vráti používateľa
@@ -21,19 +22,17 @@ export function LoginButton() {
 
   if (email) {
     return (
-      <span class="login">
-        <span class="login-email muted" title={email}>
-          {email}
-        </span>
-        <a class="btn" href={LOGOUT_URL}>
-          Odhlásiť
-        </a>
-      </span>
+      <a class="glass login" href={LOGOUT_URL} title={`Prihlásený: ${email} – odhlásiť`}>
+        <Icon name="logout" size={16} />
+        <span class="login-email">{email}</span>
+        <span class="login-short">Odhlásiť</span>
+      </a>
     );
   }
   return (
-    <a class="btn login" href={LOGIN_PATH}>
-      Prihlásiť
+    <a class="glass login" href={LOGIN_PATH}>
+      <Icon name="login" size={16} />
+      Prihlásiť sa
     </a>
   );
 }

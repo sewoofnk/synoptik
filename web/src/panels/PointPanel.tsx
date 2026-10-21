@@ -1,3 +1,4 @@
+import { useRef } from "preact/hooks";
 import { getPointModel, POINT_MODELS } from "../config/pointModels";
 import { Meteogram } from "../charts/Meteogram";
 import { ModelCompare } from "../charts/ModelCompare";
@@ -6,8 +7,9 @@ import { useAsync } from "../charts/common";
 import { fetchModelRun } from "../data/pointForecast";
 import { ageHours, formatRun } from "../lib/time";
 import { point, pointModelId, pointTab, type PointTab } from "../state/store";
+import { Icon } from "./icons";
 
-// Pravý panel (na mobile list zdola) po kliknutí na mapu: Meteogram / Skew-T / Porovnanie modelov.
+// Bodový panel (desktop vľavo, mobil list zdola) po kliknutí na mapu: Meteogram / Skew-T / Porovnanie modelov.
 
 const TABS: { id: PointTab; label: string }[] = [
   { id: "meteogram", label: "Meteogram" },
@@ -37,6 +39,7 @@ function RunLine({ modelId }: { modelId: string }) {
 }
 
 export function PointPanel() {
+  const dragY = useRef<number | null>(null);
   const p = point.value;
   if (!p) return null;
   const tab = pointTab.value;
@@ -44,6 +47,21 @@ export function PointPanel() {
 
   return (
     <section class="sheet point-panel" aria-label="Bodová predpoveď">
+      {/* úchyt listu na mobile: potiahnutie nadol zavrie */}
+      <div
+        class="sheet-grip"
+        onPointerDown={(e) => {
+          dragY.current = e.clientY;
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        }}
+        onPointerUp={(e) => {
+          if (dragY.current !== null && e.clientY - dragY.current > 60) point.value = null;
+          dragY.current = null;
+        }}
+        aria-hidden="true"
+      >
+        <span />
+      </div>
       <header class="sheet-head">
         <div class="sheet-title">
           <b>
@@ -52,7 +70,7 @@ export function PointPanel() {
           {tab !== "compare" && <RunLine modelId={modelId} />}
         </div>
         <button class="icon-btn" onClick={() => (point.value = null)} aria-label="Zavrieť (Esc)" title="Zavrieť (Esc)">
-          ✕
+          <Icon name="close" />
         </button>
       </header>
       <nav class="tabs" role="tablist">

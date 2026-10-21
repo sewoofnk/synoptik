@@ -1,16 +1,14 @@
-// Pätička: upozornenie (nie je certifikovaný letecký zdroj) a atribúcia zdrojov dát.
+import { menuOpen } from "../state/store";
+
+// Nenápadná pätička: upozornenie (nie je certifikovaný letecký zdroj) a skrátená atribúcia.
+// Úplná atribúcia je v menu (O aplikácii) a v rohu mapy.
 export function Footer() {
   return (
     <footer class="footer">
-      <span>
-        Nie je certifikovaný zdroj leteckých informácií. Na let používajte oficiálny brífing.
-      </span>
-      <span class="sources">
-        Dáta: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) ·
-        modely DWD, ECMWF, NOAA · mapa ©{" "}
-        <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a>,{" "}
-        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
-      </span>
+      <span>Nie je certifikovaný zdroj leteckých informácií – na let používajte oficiálny brífing.</span>
+      <button class="link" onClick={() => (menuOpen.value = true)}>
+        © Open-Meteo (CC BY 4.0) · DWD · ECMWF · NOAA · OpenFreeMap · OSM
+      </button>
     </footer>
   );
 }

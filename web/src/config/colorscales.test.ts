@@ -32,3 +32,13 @@ describe("colorscales", () => {
     expect(buildLut(COLOR_SCALES.wind!).length).toBe(1024);
   });
 });
+
+describe("cssGradient", () => {
+  it("vytvorí platný CSS prechod s požadovaným počtom zarážok", async () => {
+    const { cssGradient, COLOR_SCALES } = await import("./colorscales");
+    const g = cssGradient(COLOR_SCALES.temperature!, 90, 0, 1, 4);
+    expect(g.startsWith("linear-gradient(90deg, rgb(")).toBe(true);
+    expect(g.match(/rgb\(/g)!.length).toBe(4);
+    expect(g.endsWith("100%)")).toBe(true);
+  });
+});

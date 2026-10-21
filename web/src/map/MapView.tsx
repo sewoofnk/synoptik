@@ -1,11 +1,12 @@
 import { effect } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
-import { Map as MlMap, Marker, NavigationControl, ScaleControl, setWorkerUrl } from "maplibre-gl";
+import { AttributionControl, Map as MlMap, Marker, ScaleControl, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 // MapLibre v6 načítava worker ako samostatný ES modul – Vite ho musí vydať ako asset
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { mapView, point } from "../state/store";
 import { MapController } from "./mapController";
+import { setMapInstance } from "./mapInstance";
 
 setWorkerUrl(workerUrl);
 
@@ -34,14 +35,18 @@ export function MapView() {
       dragRotate: false,
       pitchWithRotate: false,
       touchPitch: false,
-      attributionControl: { compact: true },
+      attributionControl: false,
       // Bez prelínania popiskov – okamžitá odozva pri prepínaní
       fadeDuration: 0,
     });
     map.touchZoomRotate.disableRotation();
     map.keyboard.disable(); // šípky patria časovej osi
-    map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+    // zoom a polohu ovládajú vlastné tlačidlá (MapControls); atribúcia štýlu ostáva v rohu mapy
+    map.addControl(new AttributionControl({ compact: true }), "bottom-left");
     map.addControl(new ScaleControl({ unit: "metric" }), "bottom-left");
+    setMapInstance(map);
+    // kompaktná atribúcia sa pri štarte sama rozbalí a na mobile prekrýva ovládanie → zbaliť (ikona „i“ ju otvorí)
+    map.once("load", () => container.current?.querySelector(".maplibregl-compact-show")?.classList.remove("maplibregl-compact-show"));
     // Chyby štýlu/dlaždíc MapLibre inak tichá
     map.on("error", (e) => console.error("MapLibre:", e.error?.message ?? e));
 
@@ -79,6 +84,7 @@ export function MapView() {
       stopMarker();
       marker.remove();
       controller.dispose();
+      setMapInstance(null);
       map.remove();
     };
   }, []);

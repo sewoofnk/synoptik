@@ -173,3 +173,17 @@ export function buildLut(scale: ColorScale, size = 256): Uint8Array {
   }
   return out;
 }
+
+/**
+ * CSS lineárny prechod zo škály (náhľady vrstiev v menu). Priehľadnosť sa ignoruje,
+ * aby boli náhľady čitateľné aj pri škálach s priehľadným začiatkom (oblačnosť, zrážky).
+ */
+export function cssGradient(scale: ColorScale, angle = 135, from = 0.1, to = 0.9, n = 6): string {
+  const parts: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const pos = from + ((to - from) * i) / (n - 1);
+    const [r, g, b] = colorAt(scale, scaleValueAt(scale, pos));
+    parts.push(`rgb(${r} ${g} ${b}) ${Math.round((i / (n - 1)) * 100)}%`);
+  }
+  return `linear-gradient(${angle}deg, ${parts.join(", ")})`;
+}

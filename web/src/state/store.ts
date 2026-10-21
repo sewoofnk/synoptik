@@ -75,6 +75,9 @@ export const fieldStatus = signal<{ loading: boolean; error: string | null; note
 /** Hodnota pod kurzorom (nastavuje mapa) */
 export const cursor = signal<{ lat: number; lon: number; value: number; x: number; y: number } | null>(null);
 
+/** Hlavné menu (vrstvy, nastavenia) */
+export const menuOpen = signal(false);
+
 /** Bod vybraný klikom na mapu (pravý panel) */
 export const point = signal<{ lat: number; lon: number } | null>(null);
 export type PointTab = "meteogram" | "skewt" | "compare";

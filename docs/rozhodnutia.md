@@ -4,6 +4,18 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-008 · 2026-10-21 · Rozloženie UI podľa Windy, mobil ako plnohodnotný cieľ
+
+**Rozhodnutie (na žiadosť vlastníka, podľa screenshotov Windy):** stránka sa používa na PC aj na iPhone. Rozloženie:
+- **Mapa cez celú obrazovku**, ovládanie pláva nad ňou (polopriehľadné panely, svetlá aj tmavá téma).
+- **Vľavo hore** štítok: vrstva, model, beh (init time, vek) a čas platnosti s predstihom. Zadanie (sekcia 1) vyžaduje, aby boli vždy viditeľné. Klik otvorí menu.
+- **Vpravo hore:** Prihlásiť sa, Menu, rýchle vrstvy (okrúhle ikony s farbami škály a popisom; `quick: true` v `layers.config.ts`), „Viac vrstiev…“.
+- **Menu:** model a beh, vrstvy v dlaždiciach podľa kategórií, prekrytia (prepínače), jednotky, rýchlosť prehrávania, informácie a atribúcia. Desktop: panel vpravo, mobil: celá obrazovka.
+- **Dole:** prepínače izobár a častíc, zoom (iba desktop) a moja poloha, rad modelov s rozlíšením, legenda (klik na jednotku ju prepne, ako vo Windy), časová os s dňami (posúvanie prstom, pozícia podľa času, nie indexu), pätička s upozornením.
+- **Bodový panel:** desktop vľavo pod štítkom, mobil list zdola (78 % výšky, potiahnutie úchytu nadol ho zavrie).
+- Mobil: dotykové plochy ≥ 40 px, `env(safe-area-inset-*)` (notch, home indicator), `dvh`, bez horizontálneho pretečenia. Overené v Playwright na iPhone 13 a iPhone SE (svetlá aj tmavá téma) a na desktope 1400×860.
+- Popisok pod kurzorom sa ukazuje iba na zariadeniach s myšou (`hover: hover`).
+
 ## R-007 · 2026-10-21 · Verejná stránka, Cloudflare Access iba na prihlásenie
 
 **Rozhodnutie (na žiadosť vlastníka):** aplikácia sa otvorí bez prihlasovacej obrazovky. V hornej lište vpravo je tlačidlo **Prihlásiť**. Toto mení sekciu 3.4 zadania.

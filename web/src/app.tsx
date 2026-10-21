@@ -1,14 +1,13 @@
 import { useEffect } from "preact/hooks";
 import { MODELS } from "./config/models";
 import { MapView } from "./map/MapView";
+import { BottomBar } from "./panels/BottomBar";
 import { CursorTooltip } from "./panels/CursorTooltip";
-import { Footer } from "./panels/Footer";
-import { LayerPanel } from "./panels/LayerPanel";
+import { InfoChip } from "./panels/InfoChip";
+import { MainMenu } from "./panels/MainMenu";
 import { PointPanel } from "./panels/PointPanel";
-import { Legend } from "./panels/Legend";
-import { Timeline } from "./panels/Timeline";
-import { TopBar } from "./panels/TopBar";
-import { modelId, playing, point, refreshRun, stepTime } from "./state/store";
+import { QuickLayers } from "./panels/QuickLayers";
+import { menuOpen, modelId, playing, point, refreshRun, stepTime } from "./state/store";
 
 /** Klávesové skratky: ←/→ čas, medzerník play, M model, [ ] hladina (od Fázy 3) */
 function onKey(e: KeyboardEvent) {
@@ -24,7 +23,8 @@ function onKey(e: KeyboardEvent) {
       stepTime(1);
       break;
     case "Escape":
-      point.value = null;
+      if (menuOpen.value) menuOpen.value = false;
+      else point.value = null;
       break;
     case " ":
       playing.value = !playing.value;
@@ -54,18 +54,30 @@ export function App() {
     };
   }, []);
 
+  // výška spodnej časti → CSS premenná (umiestnenie bodového panelu a ovládacích prvkov mapy)
+  useEffect(() => {
+    const bottom = document.querySelector<HTMLElement>(".bottom");
+    const app = document.querySelector<HTMLElement>(".app");
+    if (!bottom || !app) return;
+    const controls = bottom.querySelector<HTMLElement>(".bottom-controls");
+    const ro = new ResizeObserver(() => {
+      app.style.setProperty("--bottom-h", `${bottom.offsetHeight}px`);
+      // výška časovej osi + pätičky (bez ovládacích prvkov vpravo) – pre bodový panel na desktope
+      app.style.setProperty("--tl-h", `${bottom.offsetHeight - (controls?.offsetHeight ?? 0)}px`);
+    });
+    ro.observe(bottom);
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <div class="layout">
-      <TopBar />
-      <main class="main">
-        <MapView />
-        <LayerPanel />
-        <Legend />
-        <CursorTooltip />
-        <PointPanel />
-      </main>
-      <Timeline />
-      <Footer />
+    <div class="app">
+      <MapView />
+      <CursorTooltip />
+      <InfoChip />
+      <QuickLayers />
+      <BottomBar />
+      <PointPanel />
+      <MainMenu />
     </div>
   );
 }
