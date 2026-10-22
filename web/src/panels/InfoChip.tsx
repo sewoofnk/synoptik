@@ -1,5 +1,5 @@
 import { ageHours, formatLead, formatRun, formatValidUtc } from "../lib/time";
-import { currentStep, fieldStatus, layer, menuOpen, model, obsStatus, runChoice, runError, runInfo, validTime } from "../state/store";
+import { currentStep, fieldStatus, layer, menuOpen, model, obsStatus, overlays, radarInfo, runChoice, runError, runInfo, validTime } from "../state/store";
 
 const utcHm = (ms: number) => {
   const d = new Date(ms);
@@ -49,6 +49,12 @@ export function InfoChip() {
           {obsStatus.value.metar && <>METAR {utcHm(obsStatus.value.metar.time)}</>}
           {obsStatus.value.metar && obsStatus.value.synop && " · "}
           {obsStatus.value.synop && <>SYNOP {utcHm(obsStatus.value.synop.term)}</>}
+        </span>
+      )}
+      {radarInfo.value && radarInfo.value.t > 0 && overlays.value.includes("radar") && (
+        <span class="ic-line mono obs-line">
+          {"Radar: "}
+          {radarInfo.value.source === "shmu" ? "SHMÚ" : "RainViewer"} {utcHm(radarInfo.value.t)}
         </span>
       )}
       {obsStatus.value.error && <span class="ic-line error">{obsStatus.value.error}</span>}

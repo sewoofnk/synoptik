@@ -8,6 +8,7 @@ import { pointModelForMap } from "../config/pointModels";
 import { combineRuns, fetchLatestRun, fetchRunMeta, listRuns, type RunInfo } from "../data/openMeteoSpatial";
 import { buildTimeline, nearestStepIndex, type Step } from "../data/timeline";
 import { isUnitSettings, PRESETS, type UnitSettings } from "../lib/units";
+import type { RadarFrame, RadarSource } from "../data/radar";
 import { DEFAULT_BORDERS, isBorderSettings, type BorderSettings } from "../map/borders";
 import { decodeHash, encodeHash, type ViewState } from "./viewState";
 
@@ -15,6 +16,7 @@ const LS_VIEW = "synoptik.view";
 const LS_UNITS = "synoptik.units";
 const LS_BORDERS = "synoptik.borders";
 const LS_PARTICLES = "synoptik.particles";
+const LS_RADAR = "synoptik.radar";
 
 const DEFAULT_VIEW: ViewState = {
   model: DEFAULT_MODEL_ID,
@@ -98,6 +100,21 @@ export const obsStatus = signal<{
   synop?: { term: number; count: number };
   error?: string;
 }>({});
+
+// --- Radar a blesky (R-016) ---
+const storedRadar = readLocal<{ source?: string; product?: string }>(LS_RADAR);
+export const radarSource = signal<RadarSource>(storedRadar?.source === "rainviewer" ? "rainviewer" : "shmu");
+export const radarProduct = signal(
+  ["data.cmax", "data.cappi2km", "data.1hrain", "data.etop"].includes(storedRadar?.product ?? "") ? storedRadar!.product! : "data.cmax",
+);
+/** Snímky zvoleného zdroja od najstaršej (nastavuje RadarOverlay) a index zobrazenej */
+export const radarFrames = signal<RadarFrame[]>([]);
+export const radarIndex = signal(-1);
+/** true = zobrazená je najnovšia snímka a sleduje sa (obnovenie ju posunie) */
+export const radarLive = signal(true);
+export const radarPlaying = signal(false);
+export const radarInfo = signal<{ source: RadarSource; product: string; t: number; error?: string; updated?: number } | null>(null);
+effect(() => writeLocal(LS_RADAR, { source: radarSource.value, product: radarProduct.value }));
 
 /** Hlavné menu (vrstvy, nastavenia) */
 export const menuOpen = signal(false);

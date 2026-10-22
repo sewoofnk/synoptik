@@ -31,6 +31,7 @@ import {
 import { fetchMetar, fetchSynop } from "../data/obs";
 import { ContourOverlay, type ContourSpec } from "./contourOverlay";
 import { isObsHit, ObsOverlay } from "./obsOverlay";
+import { RadarOverlay } from "./radarOverlay";
 import { FieldLayer } from "./fieldLayer";
 import { WindParticlesLayer } from "./windParticles";
 
@@ -77,6 +78,7 @@ export class MapController {
   private field = new FieldLayer(FIELD_ID);
   private particles = new WindParticlesLayer(PARTICLES_ID);
   private obs: ObsOverlay;
+  private radar: RadarOverlay;
   private isolines: ContourOverlay;
   private isotherms: ContourOverlay;
   private currentField: Field | null = null;
@@ -85,6 +87,7 @@ export class MapController {
 
   constructor(private map: MlMap) {
     this.obs = new ObsOverlay(map);
+    this.radar = new RadarOverlay(map);
     this.isolines = new ContourOverlay(map, "wx-isolines", {
       color: (dark) => (dark ? "rgba(235,238,242,0.85)" : "rgba(25,30,40,0.8)"),
     });
@@ -139,6 +142,7 @@ export class MapController {
     this.isolines.dispose();
     this.isotherms.dispose();
     this.obs.dispose();
+    this.radar.dispose();
   }
 
   /**
@@ -161,6 +165,8 @@ export class MapController {
         map.setPaintProperty(l.id, "text-halo-width", 1.3);
       }
     }
+    // radar pod izočiarami a časticami, nad farebným poľom
+    this.radar.addLayers(firstSymbol);
     this.isotherms.addLayers(firstSymbol, dark);
     this.isolines.addLayers(firstSymbol, dark);
     if (!map.getLayer(PARTICLES_ID)) map.addLayer(this.particles, firstSymbol);

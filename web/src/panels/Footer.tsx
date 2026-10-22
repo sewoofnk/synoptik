@@ -7,7 +7,7 @@ export function Footer() {
     <footer class="footer">
       <span>Nie je certifikovaný zdroj leteckých informácií – na let používajte oficiálny brífing.</span>
       <button class="link" onClick={() => (menuOpen.value = true)}>
-        © Open-Meteo (CC BY 4.0) · DWD · ECMWF · NOAA · ČHMÚ · OpenFreeMap · OSM
+        © Open-Meteo (CC BY 4.0) · DWD · ECMWF · NOAA · ČHMÚ · SHMÚ · RainViewer · OpenFreeMap · OSM
       </button>
     </footer>
   );

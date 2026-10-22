@@ -6,6 +6,7 @@ import { layer, level, modelId, overlays, point, runInfo, selectModel, toggleOve
 import { Footer } from "./Footer";
 import { Icon } from "./icons";
 import { Legend } from "./Legend";
+import { RadarBar } from "./RadarBar";
 import { Timeline } from "./Timeline";
 
 // Spodná časť obrazovky (ako Windy): prekrytia + ovládanie mapy, modely, legenda, časová os, pätička.
@@ -90,6 +91,7 @@ export function BottomBar() {
   return (
     <div class="bottom">
       <div class="bottom-controls">
+        <RadarBar />
         <div class="ctl-row">
           <OverlayToggles />
           <MapButtons />

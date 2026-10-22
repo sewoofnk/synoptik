@@ -283,7 +283,7 @@ export const LAYERS: readonly LayerDef[] = [
 ];
 
 /** Prekrytia kombinovateľné s ľubovoľnou farebnou vrstvou */
-export type OverlayId = "isobars" | "isotherms" | "particles" | "metar" | "synop";
+export type OverlayId = "isobars" | "isotherms" | "particles" | "metar" | "synop" | "radar" | "lightning";
 
 export interface OverlayDef {
   id: OverlayId;
@@ -299,6 +299,9 @@ export const OVERLAYS: readonly OverlayDef[] = [
   // pozorovania (R-014) – nezávisia od modelu ani času mapy, ukazujú posledné správy
   { id: "metar", label: "METAR", icon: "plane" },
   { id: "synop", label: "SYNOP", icon: "gauge" },
+  // radar a blesky (R-016): skutočný stav, nezávisí od modelu ani času mapy
+  { id: "radar", label: "Radar", icon: "droplet" },
+  { id: "lightning", label: "Blesky", icon: "bolt" },
 ];
 
 /** Izobary: každé 4 hPa, zvýraznené 1000 a 1020 hPa (SI) */
@@ -404,7 +407,7 @@ export function isLayerAvailable(def: LayerDef, level: Level, variables: string[
 
 /** Premenné prekrytia pri aktuálnej vrstve a hladine */
 export function overlayVariables(id: OverlayId, layer: ResolvedLayer, level: Level): string[] {
-  if (id === "metar" || id === "synop") return [];
+  if (id === "metar" || id === "synop" || id === "radar" || id === "lightning") return [];
   const s = overlaySources(layer, level);
   if (id === "particles") return [s.wind.u, s.wind.v];
   return sourceVariables(id === "isobars" ? s.isolines : s.isotherms);
