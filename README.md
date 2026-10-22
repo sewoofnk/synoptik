@@ -4,7 +4,7 @@ Súkromná meteorologická webová aplikácia pre Európu. Zadanie a pravidlá: 
 
 ## Stav
 
-**Fáza 5 – pozorovania – hotová.** Nasadené na https://synoptik-ezo.pages.dev (hlavná stránka verejná, prihlásenie vpravo hore).
+**Fáza 5 – pozorovania – hotová.** Nasadené na **https://cloudy-sk.pages.dev** (hlavná stránka verejná, prihlásenie vpravo hore). Pôvodná adresa synoptik-ezo.pages.dev je zrušená ([R-015](docs/rozhodnutia.md)).
 
 Hotové:
 - Fáza 0: Vite + TS strict + Preact, MapLibre GL JS 6 + OpenFreeMap, noindex, atribúcia, rozhodnutie o dátach ([R-001](docs/rozhodnutia.md))
@@ -48,20 +48,20 @@ Jednorazové nastavenie v Cloudflare dashboarde:
 
 1. **Workers & Pages → Create → Pages → Connect to Git** → vybrať súkromný repozitár.
 2. Nastavenie buildu:
-   - Project name: `synoptik` (→ `synoptik-ezo.pages.dev`, názov bez prípony bol obsadený)
+   - Project name: `cloudy-sk` (→ `cloudy-sk.pages.dev`; `cloudy` bol obsadený). Pôvodný projekt `synoptik` (synoptik-ezo.pages.dev) bol zrušený.
    - Production branch: `main`
    - Framework preset: *None*
    - Build command: `cd web && npm ci && npm run build`
    - Build output directory: `web/dist`
    - Premenná prostredia: `NODE_VERSION` = `24`
-3. Ďalej sa nasadzuje automaticky pri každom pushi do `main`. Ostatné vetvy idú na preview `*.synoptik-ezo.pages.dev`.
+3. Ďalej sa nasadzuje automaticky pri každom pushi do `main`. Ostatné vetvy idú na preview `*.cloudy-sk.pages.dev`.
 
 ### Cloudflare Access (prihlásenie vlastníka)
 
 Hlavná stránka je verejná. Access chráni iba cestu `/prihlasenie` a preview deploymenty ([R-007](docs/rozhodnutia.md)).
 
 1. **Zero Trust** (bezplatný plán) → **Access controls → Applications → Add → Self-hosted**, názov „Synoptik“.
-2. Ciele: `synoptik-ezo.pages.dev/prihlasenie` a `*.synoptik-ezo.pages.dev`.
+2. Ciele: `cloudy-sk.pages.dev/prihlasenie` a `*.cloudy-sk.pages.dev`.
 3. Policy: *Allow*, Include → *Emails* → e-mail vlastníka. Login metóda: *One-time PIN*.
 4. Overenie: hlavná stránka sa otvorí bez prihlásenia. Tlačidlo **Prihlásiť** vpravo hore vedie na prihlásenie Access a potom späť. Po prihlásení je vpravo hore e-mail a **Odhlásiť**.
 

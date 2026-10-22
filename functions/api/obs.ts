@@ -11,7 +11,7 @@ interface Ctx {
   waitUntil(p: Promise<unknown>): void;
 }
 
-const UA = "Synoptik (personal non-commercial app; https://synoptik-ezo.pages.dev)";
+const UA = "Synoptik (personal non-commercial app; https://cloudy-sk.pages.dev)";
 const METAR_URL = "https://aviationweather.gov/data/cache/metars.cache.csv.gz";
 const TAF_URL = "https://aviationweather.gov/api/data/taf";
 const OGIMET_URL = "https://www.ogimet.com/cgi-bin/getsynop";

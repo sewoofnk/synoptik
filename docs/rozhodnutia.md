@@ -4,6 +4,18 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-015 · 2026-10-22 · Nová adresa cloudy-sk.pages.dev
+
+**Požiadavka vlastníka:** premenovať adresu na `cloudy.pages.dev`.
+
+- Cloudflare Pages **neumožňuje premenovať projekt**, subdoména sa určí pri vytvorení. `cloudy.pages.dev` je **obsadená** (cudzia stránka, HTTP 500, Next.js). Vlastník vybral **`cloudy-sk.pages.dev`**.
+- Vytvorený nový projekt Pages `cloudy-sk` cez API, napojený na ten istý repozitár (GitHub `sewoofnk/synoptik`, vetva `main`, rovnaký build a `NODE_VERSION=24`). Cloudflare pridelil presne `cloudy-sk.pages.dev`.
+- **Stará adresa** `synoptik-ezo.pages.dev`: pôvodne mala presmerovať, vlastník sa rozhodol **starý projekt `synoptik` zmazať**. Po overení, že `cloudy-sk.pages.dev` beží, bol zmazaný cez API a stará adresa prestala fungovať. Uložené pohľady (URL hash, localStorage) sa viažu na doménu, na novej adrese sa začína s predvoleným pohľadom (Slovensko).
+- **Cloudflare Access** (aplikácia „Synoptik“) teraz chráni `cloudy-sk.pages.dev/prihlasenie` a `*.cloudy-sk.pages.dev`.
+- Odkazy v `CLAUDE.md`, `README.md` a User-Agent v `/api/obs` aktualizované. Staršie záznamy (R-007 až R-014) ostávajú so starou adresou ako história.
+
+---
+
 ## R-014 · 2026-10-22 · Fáza 5: pozorovania METAR/TAF a SYNOP
 
 **Overené:**
