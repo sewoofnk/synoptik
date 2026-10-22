@@ -16,7 +16,7 @@ export interface ViewState {
   zoom: number;
 }
 
-const OVERLAY_IDS: readonly OverlayId[] = ["isobars", "isotherms", "particles"];
+const OVERLAY_IDS: readonly OverlayId[] = ["isobars", "isotherms", "particles", "metar", "synop"];
 
 /** "2026-10-21T06:00:00.000Z" → "2026-10-21T06" (hodinová presnosť stačí) */
 export function compactTime(iso: string): string {

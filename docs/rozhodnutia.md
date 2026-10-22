@@ -4,6 +4,28 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
+## R-014 · 2026-10-22 · Fáza 5: pozorovania METAR/TAF a SYNOP
+
+**Overené:**
+- **aviationweather.gov Data API** (`/api/data/metar?bbox=…`) vráti **najviac 400 výsledkov** na požiadavku, celá Európa sa nezmestí. Preto sa METAR berie z hromadného súboru **`/data/cache/metars.cache.csv.gz`**: celý svet (~5300 správ, 250 KB gzip), obnovuje sa každú minútu, stĺpce podľa hlavičky. Z neho sa vyfiltruje Európa (30–72° N, 30° W – 45° E), ~950 staníc. QNH sa berie zo skupiny `Qxxxx` v správe (stĺpec `altim_in_hg` je zaokrúhlený).
+- **TAF** pre jednu stanicu: `/api/data/taf?ids=LZKZ&format=json` (načíta sa až po kliknutí na stanicu).
+- **OGIMET** `cgi-bin/getsynop?begin=…&end=…` **bez filtra stanice** vráti celý svet za jeden termín (~1,1 MB, 0,5 s, ~10 400 riadkov, ~2800 európskych). Jedna požiadavka za termín je ohľaduplná. Termín s oneskorením ~75 min, ak je ešte neúplný (< 500 staníc), použije sa predchádzajúci. Bloky WMO: 01–17, 22, 26, 27, 33, 34.
+- **Súradnice staníc SYNOP:** NOAA NCEI ISD history (verejná doména), USAF = WMO × 10, stanice aktívne od 2024 vo výreze Európy. Spolu 3226 staníc, `web/public/data/synop-stations.json` (130 KB), generuje `pipeline/stations/build_synop_stations.py`. Pokrytie ~82 % európskych staníc OGIMET, ostatné sa nezobrazia.
+
+**Riešenie:**
+- **Pages Function `functions/api/obs.ts`:** `?type=metar` (cache 10 min), `?type=taf&id=` (10 min), `?type=synop` (30 min, kľúč podľa termínu). Cache je v Cloudflare `caches.default`. Zdieľané parsovanie je v `shared/obs.ts` (testy vo `web/src/lib/obs.shared.test.ts`). User-Agent identifikuje aplikáciu.
+- Endpoint je **verejný** (nie za Access), lebo mapa je verejná (R-007). Vďaka cache volá zdroje najviac 6×/h (METAR) a 2×/h (SYNOP) bez ohľadu na počet návštev. Workers limit 100 000 požiadaviek/deň je ďaleko.
+- **Dekódovanie SYNOP** (`lib/synop.ts`, FM 12, oddiel 1 + nárazy 910/911 z oddielu 3): oblačnosť N, vietor (jednotka podľa iw, 00fff), T, Td alebo RH, tlak na stanici a MSL (4a3hhh geopotenciál horských staníc sa ignoruje), tendencia, zrážky, ww, dohľadnosť. Testy sú na skutočných správach (Košice, Bratislava, Chopok).
+- **Mapa** (`map/obsOverlay.ts`):
+  - **SYNOP:** klasický staničný model, teda krúžok oblačnosti v osminách (WMO 2700), vlajka vetra v uzloch, teplota vľavo hore, rosný bod vľavo dole a tlak MSL vpravo hore v skrátenom tvare (1011,5 → 115).
+  - **METAR:** bod vo farbe letovej kategórie (VFR/MVFR/IFR/LIFR), vlajka, T/Td, ICAO a jav.
+  - Vlajky sú generované ikony otáčané podľa smeru. **Preriedenie:** najviac jedna stanica na 64 × 64 px obrazovky, slovenské a hlavné stanice majú prednosť. Všetky vrstvy tak kreslia rovnakú podmnožinu.
+- **Klik na stanicu** otvorí popup s dekódovanou správou, pôvodným textom a pri METAR aj TAF. Bodový panel sa pritom neotvorí.
+- Pozorovania nezávisia od času mapy (vždy posledné správy). Štítok vľavo hore ukazuje „Pozorovania: METAR 14:36Z · SYNOP 12:00Z“. Prepínače METAR a SYNOP sú v spodnej lište aj v menu.
+- Overené lokálne cez `wrangler pages dev` a Playwright (desktop aj iPhone): ~950 METAR, ~2800 SYNOP, popup LZKZ s TAF, bez chýb.
+
+---
+
 ## R-013 · 2026-10-21 · Spodný panel predpovede pre miesto (ako Windy)
 
 **Požiadavka vlastníka** (screenshoty Windy): po kliknutí na miesto sa dole zobrazí panel s tabuľkami.

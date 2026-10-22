@@ -4,7 +4,7 @@ Súkromná meteorologická webová aplikácia pre Európu. Zadanie a pravidlá: 
 
 ## Stav
 
-**Fáza 4 – konvekcia a ensemble – hotová.** Nasadené na https://synoptik-ezo.pages.dev (hlavná stránka verejná, prihlásenie vpravo hore).
+**Fáza 5 – pozorovania – hotová.** Nasadené na https://synoptik-ezo.pages.dev (hlavná stránka verejná, prihlásenie vpravo hore).
 
 Hotové:
 - Fáza 0: Vite + TS strict + Preact, MapLibre GL JS 6 + OpenFreeMap, noindex, atribúcia, rozhodnutie o dátach ([R-001](docs/rozhodnutia.md))
@@ -16,6 +16,7 @@ Hotové:
   - Klik do grafu posunie čas mapy; Skew-T sa riadi časom mapy
 - Fáza 3 ([R-009](docs/rozhodnutia.md)): hladiny povrch/850/700/500/300/250 hPa (klávesy `[` `]`), teplota, rosný bod, vietor, vlhkosť, geopotenciál v hladinách, relatívna topografia 500/1000; izobary/izohypsy a izotermy; častice vetra v hladine; modely **ECMWF IFS 0,25°** a **GFS 0,25°** (výrez Európy z globálnej mriežky)
 - Fáza 4 ([R-012](docs/rozhodnutia.md)): vrstvy CAPE, CIN, Lifted Index, strih vetra 0–6 km a nulová izoterma (podľa dostupnosti v modeli); záložka **Ensemble** (ECMWF ENS, ICON EPS, GEFS, AIFS): členy, medián, 10./90. percentil, pravdepodobnosť prekročenia prahu
+- Fáza 5 ([R-014](docs/rozhodnutia.md)): **METAR** (letové kategórie, popup s TAF) a **SYNOP** (staničný model) na mape cez Pages Function `/api/obs` s cache
 - **Spodný panel predpovede ako Windy** ([R-013](docs/rozhodnutia.md)): po kliknutí na miesto tabuľky Základné, Vietor (všetky modely), Airgram, Kvalita ovzdušia + Meteogram, Skew-T, Modely, Ensemble; názov miesta z OSM
 - **ALADIN 2 km (ČHMÚ)** na mape aj v bodových nástrojoch – detail celého Slovenska vrátane východu; projekcia LCC sa prevzorkuje na lat/lon ([R-011](docs/rozhodnutia.md))
 - **História** na časovej osi 7 dní dozadu z minulých behov, predpoveď do konca behu (GFS 16 dní); štítok ukazuje beh každého kroku ([R-010](docs/rozhodnutia.md))
@@ -65,6 +66,17 @@ Hlavná stránka je verejná. Access chráni iba cestu `/prihlasenie` a preview 
 4. Overenie: hlavná stránka sa otvorí bez prihlásenia. Tlačidlo **Prihlásiť** vpravo hore vedie na prihlásenie Access a potom späť. Po prihlásení je vpravo hore e-mail a **Odhlásiť**.
 
 Nastavenie cez API (token s oprávnením *Access: Apps and Policies – Edit* v premennej `CLOUDFLARE_API_TOKEN`) je zapísané v R-007.
+
+## Pozorovania lokálne
+
+`npm run dev` nespúšťa Pages Functions, takže `/api/obs` lokálne nefunguje. Na test s funkciami:
+
+```bash
+cd web && npm run build && cd ..
+npx wrangler pages dev web/dist      # http://localhost:8788
+```
+
+Zoznam staníc SYNOP sa obnoví skriptom `python pipeline/stations/build_synop_stations.py` (stačí občas).
 
 ## Štruktúra
 

@@ -15,6 +15,7 @@ import {
   cursor,
   fieldStatus,
   layer,
+  obsStatus,
   level,
   overlays,
   particleDensity,
@@ -27,7 +28,9 @@ import {
   timeIndex,
   units,
 } from "../state/store";
+import { fetchMetar, fetchSynop } from "../data/obs";
 import { ContourOverlay, type ContourSpec } from "./contourOverlay";
+import { isObsHit, ObsOverlay } from "./obsOverlay";
 import { FieldLayer } from "./fieldLayer";
 import { WindParticlesLayer } from "./windParticles";
 
@@ -73,6 +76,7 @@ async function loadOptional(run: RunInfo, t: Date, src: FieldSource): Promise<Fi
 export class MapController {
   private field = new FieldLayer(FIELD_ID);
   private particles = new WindParticlesLayer(PARTICLES_ID);
+  private obs: ObsOverlay;
   private isolines: ContourOverlay;
   private isotherms: ContourOverlay;
   private currentField: Field | null = null;
@@ -80,6 +84,7 @@ export class MapController {
   private lastMouse: { lng: number; lat: number; x: number; y: number } | null = null;
 
   constructor(private map: MlMap) {
+    this.obs = new ObsOverlay(map);
     this.isolines = new ContourOverlay(map, "wx-isolines", {
       color: (dark) => (dark ? "rgba(235,238,242,0.85)" : "rgba(25,30,40,0.8)"),
     });
@@ -99,6 +104,8 @@ export class MapController {
     });
     // klik → bodové nástroje v pravom paneli
     map.on("click", (e) => {
+      // klik na stanicu otvorí jej správu, nie bodovú predpoveď
+      if (isObsHit(map, e.point)) return;
       point.value = { lat: e.lngLat.lat, lon: e.lngLat.lng };
     });
     map.on("mouseout", () => {
@@ -118,9 +125,12 @@ export class MapController {
         const u = units.value;
         this.isolines.relabel(u);
         this.isotherms.relabel(u);
+        this.obs.setUnits(u);
       }),
       effect(() => this.prefetch()),
       effect(() => this.playLoop()),
+      effect(() => this.syncObs("metar")),
+      effect(() => this.syncObs("synop")),
     );
   }
 
@@ -128,6 +138,7 @@ export class MapController {
     this.disposers.forEach((d) => d());
     this.isolines.dispose();
     this.isotherms.dispose();
+    this.obs.dispose();
   }
 
   /**
@@ -153,6 +164,8 @@ export class MapController {
     this.isotherms.addLayers(firstSymbol, dark);
     this.isolines.addLayers(firstSymbol, dark);
     if (!map.getLayer(PARTICLES_ID)) map.addLayer(this.particles, firstSymbol);
+    // pozorovania navrchu (nad popiskami podkladu)
+    this.obs.addLayers(undefined, dark);
   }
 
   private async syncField() {
@@ -215,6 +228,47 @@ export class MapController {
       this.particles.setWind(null, null);
       if (!(e instanceof MissingVariableError)) console.error("Častice:", e);
     }
+  }
+
+  /**
+   * Pozorovania: načítať pri zapnutí a obnovovať (METAR 10 min, SYNOP 30 min – zdroje sa
+   * aj tak cachujú v Pages Function). Nezávisia od modelu ani času mapy.
+   */
+  private syncObs(kind: "metar" | "synop") {
+    const on = overlays.value.includes(kind);
+    if (!on) {
+      if (kind === "metar") this.obs.setMetar(null);
+      else this.obs.setSynop(null);
+      const { [kind]: _, ...rest } = obsStatus.peek();
+      obsStatus.value = rest;
+      return;
+    }
+    let stopped = false;
+    const load = () => {
+      const p =
+        kind === "metar"
+          ? fetchMetar().then((d) => {
+              if (stopped) return;
+              this.obs.setMetar(d.obs);
+              const time = d.obs.reduce((m, o) => Math.max(m, o.time), 0);
+              obsStatus.value = { ...obsStatus.peek(), metar: { time, count: d.obs.length }, error: undefined };
+            })
+          : fetchSynop().then((d) => {
+              if (stopped) return;
+              this.obs.setSynop(d.stations);
+              obsStatus.value = { ...obsStatus.peek(), synop: { term: d.term, count: d.stations.length }, error: undefined };
+            });
+      p.catch((e: unknown) => {
+        if (stopped) return;
+        obsStatus.value = { ...obsStatus.peek(), error: `${kind.toUpperCase()}: ${e instanceof Error ? e.message : String(e)}` };
+      });
+    };
+    untracked(load);
+    const timer = setInterval(load, kind === "metar" ? 10 * 60_000 : 30 * 60_000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
   }
 
   /** Izobary (povrch), izohypsy (hladina) alebo vlastné izočiary vrstvy (relatívna topografia) */

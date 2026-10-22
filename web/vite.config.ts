@@ -3,6 +3,8 @@ import preact from "@preact/preset-vite";
 
 export default defineConfig({
   plugins: [preact()],
+  // zdieľaný kód s Pages Functions (../shared) – povoliť pri vite dev
+  server: { fs: { allow: [".."] } },
   build: {
     target: "es2022",
     sourcemap: true,

@@ -92,6 +92,13 @@ export const fieldStatus = signal<{ loading: boolean; error: string | null; note
 /** Hodnota pod kurzorom (nastavuje mapa) */
 export const cursor = signal<{ lat: number; lon: number; value: number; x: number; y: number } | null>(null);
 
+/** Stav pozorovaní (nastavuje mapa): čas posledných správ, počet staníc, chyba */
+export const obsStatus = signal<{
+  metar?: { time: number; count: number };
+  synop?: { term: number; count: number };
+  error?: string;
+}>({});
+
 /** Hlavné menu (vrstvy, nastavenia) */
 export const menuOpen = signal(false);
 
