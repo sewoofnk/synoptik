@@ -4,14 +4,15 @@ Formát: dátum – rozhodnutie – dôvod – ako sa overilo. Najnovšie hore.
 
 ---
 
-## R-015 · 2026-10-22 · Nová adresa cloudy-sk.pages.dev
+## R-015 · 2026-10-22 · Nová adresa cloudy8.pages.dev
 
 **Požiadavka vlastníka:** premenovať adresu na `cloudy.pages.dev`.
 
-- Cloudflare Pages **neumožňuje premenovať projekt**, subdoména sa určí pri vytvorení. `cloudy.pages.dev` je **obsadená** (cudzia stránka, HTTP 500, Next.js). Vlastník vybral **`cloudy-sk.pages.dev`**.
-- Vytvorený nový projekt Pages `cloudy-sk` cez API, napojený na ten istý repozitár (GitHub `sewoofnk/synoptik`, vetva `main`, rovnaký build a `NODE_VERSION=24`). Cloudflare pridelil presne `cloudy-sk.pages.dev`.
-- **Stará adresa** `synoptik-ezo.pages.dev`: pôvodne mala presmerovať, vlastník sa rozhodol **starý projekt `synoptik` zmazať**. Po overení, že `cloudy-sk.pages.dev` beží, bol zmazaný cez API a stará adresa prestala fungovať. Uložené pohľady (URL hash, localStorage) sa viažu na doménu, na novej adrese sa začína s predvoleným pohľadom (Slovensko).
-- **Cloudflare Access** (aplikácia „Synoptik“) teraz chráni `cloudy-sk.pages.dev/prihlasenie` a `*.cloudy-sk.pages.dev`.
+- Cloudflare Pages **neumožňuje premenovať projekt**, subdoména sa určí pri vytvorení. `cloudy.pages.dev` je **obsadená** (cudzia stránka). Vlastník zvolil `cloudy8.pages.dev` a projekt `cloudy8` vytvoril sám v dashboarde (Framework preset None, build `cd web && npm ci && npm run build`, výstup `web/dist`, root directory prázdny kvôli `functions/`, `NODE_VERSION=24`).
+- Medzitým som cez API vytvoril projekt `cloudy-sk` (`cloudy-sk.pages.dev`) na tom istom repozitári. Po overení `cloudy8` bol zmazaný, rovnako starý projekt `synoptik` (`synoptik-ezo.pages.dev`). **Staré adresy prestali fungovať.**
+- Overené na `cloudy8.pages.dev`: hlavná stránka 200, `/api/obs` (METAR ~950, SYNOP ~2800), `/data/synop-stations.json`.
+- **Cloudflare Access** (aplikácia „CLOUDY“) chráni `cloudy8.pages.dev/prihlasenie` a `*.cloudy8.pages.dev`; overené presmerovaním `/prihlasenie/` na prihlásenie.
+- Uložené pohľady (URL hash, localStorage) sa viažu na doménu, preto sa na novej adrese začína s predvoleným pohľadom (Slovensko) a predvolenými jednotkami. Nastavenia (jednotky, hranice, hustota vetra) treba zadať znova.
 - Odkazy v `CLAUDE.md`, `README.md` a User-Agent v `/api/obs` aktualizované. Staršie záznamy (R-007 až R-014) ostávajú so starou adresou ako história.
 
 ---
